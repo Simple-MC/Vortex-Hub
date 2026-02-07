@@ -10,7 +10,7 @@ local Window = WindUI:CreateWindow({
 
 -- Función para cargar módulos desde TU GitHub (Cambia 'TuUsuario' por el tuyo)
 local function LoadModule(name)
-    local url = "https://raw.githubusercontent.com/TuUsuario/Vortex-Hub/main/Modules/" .. name .. ".lua"
+    local url = "https://raw.githubusercontent.com/Simple-MC/Vortex-Hub/main/Modules/" .. name .. ".lua"
     return loadstring(game:HttpGet(url))()
 end
 
