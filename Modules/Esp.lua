@@ -1,76 +1,85 @@
 --[[
-    MODULE: ELITE ESP SYSTEM
-    FEATURES: Tracers, Highlights, Distance, Live Stats, Advanced Filtering
+    MODULE: ULTRA PRECISION ESP & BEAM SYSTEM
+    FEATURES: 3D Beams, Attachment Tracking, 0.1s Scan, Fixed Slider
 ]]
 
-local Section = _G.EspTab:Section({ Title = "Rastreador Avanzado de Brainrots" })
+local Section = _G.EspTab:Section({ Title = "Rastreador de Élite (Beam System)" })
+local Player = game.Players.LocalPlayer
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local HumRoot = Character:WaitForChild("HumanoidRootPart")
+
 local Settings = {
     Enabled = false,
-    Tracers = false,
+    Beams = false,
     MinLevel = 0,
-    MinRate = 0,
-    RefreshRate = 0.3,
-    MaxDistance = 5000
+    RefreshRate = 0.1 -- Velocidad máxima de escaneo
 }
 
 local SelectedModels = {}
-local ActiveObjects = {}
 local Assets = game:GetService("ReplicatedStorage"):WaitForChild("Assets"):WaitForChild("Brainrots")
-local Player = game.Players.LocalPlayer
-local Camera = workspace.CurrentCamera
 
--- --- [ UTILIDADES ] ---
-local function LimpiarVisuales(br)
+-- --- [ FUNCIONES DE LIMPIEZA ] ---
+local function LimpiarTodo(br)
     if br:FindFirstChild("VVisual") then br.VVisual:Destroy() end
     if br:FindFirstChild("VInfo") then br.VInfo:Destroy() end
-    if br:FindFirstChild("VTracer") then br.VTracer:Destroy() end
+    if br:FindFirstChild("VAttach") then br.VAttach:Destroy() end
+    local oldBeam = HumRoot:FindFirstChild("Beam_" .. br.Name)
+    if oldBeam then oldBeam:Destroy() end
 end
 
--- --- [ UI DE CONTROL ] ---
+-- --- [ INTERFAZ DE USUARIO ] ---
 Section:Toggle({
-    Title = "Activar Sistema ESP",
+    Title = "Activar ESP",
     Callback = function(s) Settings.Enabled = s end
 })
 
 Section:Toggle({
-    Title = "Mostrar Tracers (Líneas)",
-    Callback = function(s) Settings.Tracers = s end
+    Title = "Activar Beams Rojos (Láser)",
+    Callback = function(s) 
+        Settings.Beams = s 
+        if not s then
+            for _, v in pairs(HumRoot:GetChildren()) do
+                if v.Name:find("Beam_") then v:Destroy() end
+            end
+        end
+    end
 })
 
 Section:Slider({
     Title = "Nivel Mínimo",
     Min = 0, Max = 1000, Default = 0,
-    Callback = function(v) Settings.MinLevel = v end
+    Callback = function(v) 
+        Settings.MinLevel = math.floor(v) -- Corregido para que deslice bien
+    end
 })
 
 local BrainrotDropdown
-local function ActualizarLista()
-    local Rarezas = {}
-    local TodosLosModelos = {}
+local function ActualizarDB()
+    local Todos = {}
     for _, f in pairs(Assets:GetChildren()) do
-        for _, m in pairs(f:GetChildren()) do table.insert(TodosLosModelos, m.Name) end
+        for _, m in pairs(f:GetChildren()) do table.insert(Todos, m.Name) end
     end
-    if BrainrotDropdown then BrainrotDropdown:Refresh(TodosLosModelos, {}) end
+    if BrainrotDropdown then BrainrotDropdown:Refresh(Todos, {}) end
 end
 
 BrainrotDropdown = Section:Dropdown({
-    Title = "Seleccionar Objetivos",
+    Title = "Objetivos Seleccionados",
     Multi = true,
     Values = {},
     Callback = function(val) SelectedModels = val end
 })
 
-Section:Button({ Title = "Refrescar Base de Datos", Callback = ActualizarLista })
-ActualizarLista() -- Carga inicial
+Section:Button({ Title = "Refrescar Modelos", Callback = ActualizarDB })
+ActualizarDB()
 
--- --- [ MOTOR LÓGICO (100% POWER) ] ---
+-- --- [ MOTOR LÓGICO DE ALTA VELOCIDAD (0.1s) ] ---
 task.spawn(function()
     while true do
         if Settings.Enabled then
             local ActiveFolder = workspace:FindFirstChild("ActiveBrainrots")
             if ActiveFolder then
-                for _, group in pairs(ActiveFolder:GetChildren()) do
-                    local container = group:FindFirstChild("RenderedBrainrot") or group
+                for _, rareza in pairs(ActiveFolder:GetChildren()) do
+                    local container = rareza:FindFirstChild("RenderedBrainrot") or rareza
                     
                     for _, br in pairs(container:GetChildren()) do
                         if br:IsA("Model") and table.find(SelectedModels, br.Name) then
@@ -78,63 +87,65 @@ task.spawn(function()
                                 local root = br.PrimaryPart or br:FindFirstChildWhichIsA("BasePart")
                                 local stats = br.ModelExtents.StatsGui.Frame
                                 local lvl = tonumber(stats.Level.Text:match("%d+")) or 0
-                                local rate = tonumber(stats.Rate.Text:match("%d+")) or 0
-                                local dist = math.floor((Player.Character.HumanoidRootPart.Position - root.Position).Magnitude)
-
-                                -- Filtros Avanzados
-                                if lvl >= Settings.MinLevel and dist <= Settings.MaxDistance then
-                                    -- 1. Aura (Highlight)
+                                
+                                if lvl >= Settings.MinLevel then
+                                    -- 1. Aura Roja
                                     if not br:FindFirstChild("VVisual") then
                                         local hl = Instance.new("Highlight", br)
-                                        hl.Name = "VVisual"
-                                        hl.FillColor = (lvl > 100) and Color3.new(1, 0.5, 0) or Color3.new(1, 0, 0)
-                                        hl.OutlineColor = Color3.new(1, 1, 1)
+                                        hl.Name = "VVisual"; hl.FillColor = Color3.new(1,0,0); hl.OutlineColor = Color3.new(1,1,1)
                                     end
 
-                                    -- 2. Billboard de Información
+                                    -- 2. GUI de Información
                                     if not br:FindFirstChild("VInfo") then
                                         local bg = Instance.new("BillboardGui", br)
-                                        bg.Name = "VInfo"; bg.Size = UDim2.new(0,180,0,70); bg.AlwaysOnTop = true
-                                        bg.StudsOffset = Vector3.new(0, 4, 0)
+                                        bg.Name = "VInfo"; bg.Size = UDim2.new(0,140,0,50); bg.AlwaysOnTop = true; bg.StudsOffset = Vector3.new(0,4,0)
                                         local tl = Instance.new("TextLabel", bg)
-                                        tl.Size = UDim2.new(1,0,1,0); tl.BackgroundTransparency = 1; tl.TextColor3 = Color3.new(1,1,1)
-                                        tl.TextStrokeTransparency = 0; tl.RichText = true; tl.TextSize = 14
+                                        tl.Size = UDim2.new(1,0,1,0); tl.BackgroundTransparency = 1; tl.TextColor3 = Color3.new(1,1,1); tl.TextSize = 14; tl.RichText = true
                                     end
-                                    br.VInfo.TextLabel.Text = string.format("<b>%s</b>\n<font color='#ffaa00'>Lv: %s</font> | <font color='#00ff00'>$%s</font>\n📍 %s studs", br.Name, lvl, rate, dist)
+                                    br.VInfo.TextLabel.Text = "<b>"..br.Name.."</b>\n<font color='#ff0000'>Lv: "..lvl.."</font>"
 
-                                    -- 3. Tracers (Líneas de Seguimiento)
-                                    if Settings.Tracers then
-                                        local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
-                                        if onScreen then
-                                            local tracer = br:FindFirstChild("VTracer") or Instance.new("Frame", game.CoreGui:FindFirstChildWhichIsA("ScreenGui"))
-                                            if not br:FindFirstChild("VTracer") then
-                                                tracer.Name = "VTracer"; tracer.AnchorPoint = Vector2.new(0.5, 0.5)
-                                                tracer.BackgroundColor3 = Color3.new(1, 0, 0); tracer.BorderSizePixel = 0
-                                                local folder = Instance.new("ObjectValue", br); folder.Name = "VTracer"; folder.Value = tracer
-                                            end
-                                            local startPos = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-                                            local endPos = Vector2.new(screenPos.X, screenPos.Y)
-                                            local distance = (endPos - startPos).Magnitude
-                                            tracer.Position = UDim2.new(0, (startPos.X + endPos.X) / 2, 0, (startPos.Y + endPos.Y) / 2)
-                                            tracer.Size = UDim2.new(0, distance, 0, 1.5)
-                                            tracer.Rotation = math.deg(math.atan2(endPos.Y - startPos.Y, endPos.X - startPos.X))
-                                            tracer.Visible = true
+                                    -- 3. SISTEMA DE BEAMS (CONEXIÓN AL JUGADOR)
+                                    if Settings.Beams then
+                                        -- Attachment en el Brainrot
+                                        local attBR = br:FindFirstChild("VAttach") or Instance.new("Attachment", root)
+                                        attBR.Name = "VAttach"
+
+                                        -- Attachment en el Jugador (si no existe)
+                                        local attPlayer = HumRoot:FindFirstChild("PlayerAttach") or Instance.new("Attachment", HumRoot)
+                                        attPlayer.Name = "PlayerAttach"
+
+                                        -- Crear/Actualizar el Beam
+                                        local beam = HumRoot:FindFirstChild("Beam_" .. br.Name)
+                                        if not beam then
+                                            beam = Instance.new("Beam", HumRoot)
+                                            beam.Name = "Beam_" .. br.Name
+                                            beam.Color = ColorSequence.new(Color3.new(1, 0, 0))
+                                            beam.Width0 = 0.2
+                                            beam.Width1 = 0.2
+                                            beam.FaceCamera = true
+                                            beam.Attachment0 = attPlayer
+                                            beam.Attachment1 = attBR
                                         end
                                     else
-                                        if br:FindFirstChild("VTracer") then br.VTracer.Value.Visible = false end
+                                        local b = HumRoot:FindFirstChild("Beam_" .. br.Name)
+                                        if b then b:Destroy() end
                                     end
                                 else
-                                    LimpiarVisuales(br)
+                                    LimpiarTodo(br)
                                 end
                             end)
                         else
-                            LimpiarVisuales(br)
+                            LimpiarTodo(br)
                         end
                     end
                 end
             end
         else
-            for _, v in pairs(workspace:GetDescendants()) do if v.Name == "VVisual" or v.Name == "VInfo" then v:Destroy() end end
+            -- Apagado total
+            for _, v in pairs(workspace:GetDescendants()) do
+                if v.Name == "VVisual" or v.Name == "VInfo" or v.Name == "VAttach" then v:Destroy() end
+            end
+            for _, v in pairs(HumRoot:GetChildren()) do if v.Name:find("Beam_") then v:Destroy() end end
         end
         task.wait(Settings.RefreshRate)
     end
