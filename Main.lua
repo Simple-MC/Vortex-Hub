@@ -27,7 +27,7 @@ _G.UtilitiesTab = Window:Tab({ Title = "Utilidades", Icon = "lucide-settings" })
 _G.CombatTab = Window:Tab({ Title = "Combate", Icon = "lucide-swords" }) -- Aquí va el Anti-Kill
 
 -- CARGA DE MÓDULOS (Asegúrate de que los nombres de los archivos en GitHub sean idénticos)
-LoadModule("Visuals.lua")   -- Temporizadores
+LoadModule("Visuals")   -- Temporizadores
 LoadModule("Esp")        -- ESP de Brainrots con Dropdowns
 LoadModule("Utilities")  -- VIP Free e Instant Prompt
 LoadModule("Combat")     -- Anti-Kill y protección
