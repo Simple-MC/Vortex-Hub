@@ -1,107 +1,122 @@
-# 🌪️ VORTEX HUB | CELESTIAL EDITION
+# 🌪️ VORTEX HUB | CELESTIAL EDITION (v2.5.0)
 
-![Lua](https://img.shields.io/badge/Language-Lua-blue.svg)
-![Platform](https://img.shields.io/badge/Platform-Roblox-red.svg)
-![Status](https://img.shields.io/badge/Status-UNDETECTED-brightgreen.svg)
-![Version](https://img.shields.io/badge/Version-2.5.0-purple.svg)
+![Lua](https://img.shields.io/badge/Language-Lua-blue.svg?style=for-the-badge)
+![Platform](https://img.shields.io/badge/Platform-Roblox-red.svg?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-UNDETECTED-brightgreen.svg?style=for-the-badge)
+![License](https://img.shields.io/badge/License-Private-orange.svg?style=for-the-badge)
 
-> **The most advanced, optimized, and powerful script hub for Brainrot & Event Farming.** > *Developed by Simple-MC*
+> **"The ultimate automation software engineered for perfection."**
+> *Experience the next generation of script execution with Vortex Hub.*
 
 ---
 
-## 🚀 **EXECUTION (SCRIPT LOADER)**
+## 🌌 **INTRODUCTION**
 
-Copy and paste the following script into your executor (Solara, Wave, Fluxus, Delta, etc.):
+Welcome to **Vortex Hub**, the most sophisticated and optimized script hub currently available for the Roblox platform. Designed with precision engineering and high-performance algorithms, Vortex Hub is not just a script; it is a complete ecosystem built to dominate **Escape the Tsunami for Brainrots** and future supported titles.
+
+Our proprietary **"Gemini Engine"** ensures 0-latency execution, making features like the **God-Mode ESP** and **Speed Auto-Farm** feel instant and seamless. Whether you are farming for leaderboards or simply want to explore the map with god-like powers, Vortex Hub provides the tools you need with an elegant, modern user interface powered by WindUI.
+
+---
+
+## 🎮 **SUPPORTED GAMES DATABASE**
+
+Our team is constantly working on expanding the Vortex ecosystem to new horizons.
+
+### ✅ **CURRENTLY FUNCTIONAL:**
+* **Escape the Tsunami for Brainrots** *(Full Support: Auto-Farm, ESP, God Mode)*
+
+### 🔒 **IN DEVELOPMENT (TOP SECRET):**
+> <span style="filter: blur(4px); cursor: pointer;" title="Access Denied">We are currently developing bypasses for 3 major simulator games and 1 horror game. Expect a massive update in Q4 2026... 😈</span>
+
+*(New supported games are added weekly. Stay tuned for announcements.)*
+
+---
+
+## 💎 **WHY CHOOSE VORTEX HUB?**
+
+Unlike free, pasted scripts found on the internet, Vortex Hub offers a premium experience:
+
+1.  **Zero-Crash Guarantee:** Our code is wrapped in `pcall` protection layers to prevent game crashes even during intense lag.
+2.  **Server-Side Simulation:** Features like the **Instant Proximity Prompt** simulate server interactions to allow instant item collection without detection.
+3.  **Dynamic Adaptation:** The script automatically scans the game's `ReplicatedStorage` to detect new items (Brainrots/Lucky Blocks) instantly as developers add them—no script update required.
+4.  **Optimized for Low-End PCs:** The UI and visuals are designed to consume minimal RAM and CPU resources.
+
+---
+
+## 🔥 **DETAILED FEATURE LIST**
+
+### 👁️ **Visual Intelligence System (Elite ESP)**
+The most advanced ESP on the market, featuring our exclusive **"Beam Technology"**.
+* **3D Laser Tracers:** High-precision beams connect your character directly to valuable items.
+    * 🔴 **Red Spectrum:** Tracks Brainrots.
+    * 🟡 **Yellow Spectrum:** Tracks Lucky Blocks.
+* **Smart Filtering:** Automatically ignores low-level items based on your configuration.
+* **Global Event Scraper:** Instantly reads map data to display timers for **Celestia**, **Money Rain**, and **UFO Invasions** directly on your screen.
+
+### 🚜 **Autonomous Farming Protocol**
+Forget grinding manually. Let Vortex Hub do the work.
+* **Smart Pathfinding:** The script calculates the safest route to collect Money and Tickets.
+* **Tsunami Evasion Logic:** Detects the water level and automatically teleports you to the highest safe zone available.
+* **Item Magnet:** (Experimental) Pulls drops towards you within a safe radius.
+
+### 🛡️ **Defensive Capabilities**
+* **Absolute God Mode:** Deletes kill-bricks, lava, and toxic zones locally, allowing you to walk freely where others die.
+* **VIP Wall Bypass:** Removes barriers that block access to VIP areas.
+* **Anti-AFK:** Built-in anti-idle system prevents you from being kicked for inactivity.
+
+### ⚡ **Character Modification Suite**
+* **WalkSpeed Override:** Bypass the default speed limit.
+* **Infinite Jump:** Jump mid-air to reach impossible heights.
+* **Noclip:** Phase through walls and locked doors effortlessly.
+
+---
+
+## 🚀 **INSTALLATION GUIDE**
+
+Follow these steps to inject Vortex Hub into your game client:
+
+1.  **Open Roblox** and launch "Escape the Tsunami for Brainrots".
+2.  **Open your Executor** (Solara, Wave, Fluxus, Delta, etc.).
+3.  **Copy the Source Code** below:
 
 ```lua
 loadstring(game:HttpGet("[https://raw.githubusercontent.com/Simple-MC/Vortex-Hub/main/Main.lua](https://raw.githubusercontent.com/Simple-MC/Vortex-Hub/main/Main.lua)"))()
 
 ```
 
----
-
-## 🖼️ **PREVIEW & SHOWCASE**
-
-### 🌀 Main Interface (WindUI)
-
-*Clean, modern, and intuitive interface designed for speed.*
-
-### 📡 God-Mode ESP (Beams System)
-
-*Visuals that connect directly to Brainrots (Red) and Lucky Blocks (Yellow).*
+4. **Paste** it into the executor's text box.
+5. **Click Execute/Inject**.
+6. *Wait a few seconds for the WindUI interface to load.*
 
 ---
 
-## 🔥 **KEY FEATURES**
+## ❓ **FREQUENTLY ASKED QUESTIONS (FAQ)**
 
-### 👁️ **Visuals & ESP (Elite Tier)**
+**Q: Will this script work on mobile?**
+A: Yes, Vortex Hub is fully compatible with mobile executors like Delta and Arceus X.
 
-The most advanced ESP system with **0 latency**.
+**Q: Is it safe to use on my main account?**
+A: While we use "Undetected" methods, we always recommend using an alt account for maximum safety.
 
-* **Laser Beams (Tracers):** 3D Lines connecting your player to targets.
-* 🔴 **Red Beams:** For Brainrots.
-* 🟡 **Yellow Beams:** For Lucky Blocks.
+**Q: The ESP isn't showing any lines?**
+A: Make sure you have selected items in the "Dropdown Menu" and clicked the "Refresh Database" button.
 
-
-* **Smart Filtering:** Auto-detects new entities in `ReplicatedStorage`.
-* **Auto-Rebuild:** Automatically reconnects beams if your character dies/respawns.
-* **Real-Time Trackers:** Reads Map SurfaceGUIs to detect **Celestia**, **Money Event**, and **UFOs** instantly.
-
-### 🚜 **Automation & Farming**
-
-* **Speed Auto-Farm:** Teleports and glides to collect Money/Tickets.
-* **Anti-Tsunami Logic:** Detects waves and automatically retreats to safe zones.
-* **Instant Proximity Prompt:** Collect items instantly (0 hold duration).
-
-### 🛡️ **Combat & Safety**
-
-* **God Mode / Wall Bypass:** Removes kill-bricks, mud, and VIP walls locally.
-* **Safe Zones:** Teleport to predefined safe spots on the map.
-
-### ⚡ **Player Modification**
-
-* **Speed & Jump:** Modify your WalkSpeed and JumpPower dynamically.
-* **Flight & Noclip:** Fly through walls and reach impossible areas.
-* **Gravity Control:** Adjust physics to your advantage.
+**Q: Why is the "Coming Soon" text blurred?**
+A: To prevent other developers from stealing our ideas before release. 😈
 
 ---
 
-## 📂 **MODULE STRUCTURE**
+## ⚠️ **LEGAL DISCLAIMER**
 
-For developers or contributors, here is how **Vortex Hub** is organized:
-
-| Module | Description |
-| --- | --- |
-| **`Main.lua`** | The core loader. Handles WindUI init and library imports. |
-| **`Esp.lua`** | Handles Highlights, Billboards, and Beam mechanics. |
-| **`Visuals.lua`** | Scrapes game events and map timers (Celestia/UFO). |
-| **`AutoFarm.lua`** | Logic for movement, tweening, and safe-zone algorithms. |
-| **`Combat.lua`** | Defensive features, wall removal, and anti-kill systems. |
-| **`Utilities.lua`** | Miscellaneous tools like VIP unlockers and instant prompts. |
-| **`Local.lua`** | LocalPlayer character modifications (Speed/Jump). |
-
----
-
-## 🛠️ **UPDATES & CHANGELOG**
-
-### **v2.5 - The Beam Update** 🌟
-
-* [x] Added **3D Laser Beams** for better tracking.
-* [x] Separated **Brainrots** and **Lucky Blocks** into distinct categories.
-* [x] Fixed `PrimaryPart` errors for smoother detection.
-* [x] Optimized CPU usage (Scripts now run at 0.05s refresh rate).
-* [x] Added **Tornado Icon** to Main UI.
-
----
-
-## ⚠️ **DISCLAIMER**
-
-This software is provided for educational purposes only. Using scripts in Roblox may result in account termination. Use at your own risk.
+*This software is created for educational and testing purposes only. The developers of Vortex Hub assume no responsibility for any consequences resulting from the use of this software. We do not encourage cheating in competitive environments.*
 
 ---
 
 <div align="center">
 
-**Made with ❤️ by Simple-MC** *Powered by WindUI Library*
+### 🌟 Star this repository if you enjoy using Vortex Hub!
+
+**Developed with ❤️ by Simple-MC**
+*Powered by WindUI Library • 2026 Edition*
 
 </div>
