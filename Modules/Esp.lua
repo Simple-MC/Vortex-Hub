@@ -1,71 +1,45 @@
 --[[
-    MODULE: ESP BRAINROTS
-    FEATURE: Auto-Update Dropdowns, Highlights, Stats Display
+    MODULE: VISUALS (ESP)
+    FEATURE: Multi-Target Tracking & High Performance
 ]]
 
-local Section = _G.EspTab:Section({ Title = "Configuración ESP" })
+local Section = _G.EspTab:Section({ Title = "Rastreo de Brainrots" })
 
--- Variables de Estado
-local SelectedRarezas = {}
 local SelectedModels = {}
 local ESP_Enabled = false
-
--- Referencias
 local ReplicatedAssets = game:GetService("ReplicatedStorage"):WaitForChild("Assets"):WaitForChild("Brainrots")
 
--- 1. Obtener Lista de Rarezas
+-- Dropdowns Dinámicos
+local BrainrotDropdown
 local ListaRarezas = {}
-for _, folder in pairs(ReplicatedAssets:GetChildren()) do
-    table.insert(ListaRarezas, folder.Name)
-end
+for _, folder in pairs(ReplicatedAssets:GetChildren()) do table.insert(ListaRarezas, folder.Name) end
 
-local BrainrotDropdown -- Declaración anticipada
-
--- 2. Dropdown de Rarezas (Controlador)
 Section:Dropdown({
     Title = "1. Filtrar por Rareza",
     Multi = true,
     Values = ListaRarezas,
     Callback = function(val)
-        SelectedRarezas = val
-        
-        -- Buscar modelos en las rarezas seleccionadas
         local NuevosModelos = {}
-        for _, rarezaName in pairs(SelectedRarezas) do
-            local folder = ReplicatedAssets:FindFirstChild(rarezaName)
-            if folder then
-                for _, model in pairs(folder:GetChildren()) do
-                    if not table.find(NuevosModelos, model.Name) then
-                        table.insert(NuevosModelos, model.Name)
-                    end
-                end
-            end
+        for _, rareza in pairs(val) do
+            local f = ReplicatedAssets:FindFirstChild(rareza)
+            if f then for _, m in pairs(f:GetChildren()) do table.insert(NuevosModelos, m.Name) end end
         end
-        
-        -- Refrescar el segundo menú automáticamente
-        if BrainrotDropdown then
-            BrainrotDropdown:Refresh(NuevosModelos, {})
-        end
+        if BrainrotDropdown then BrainrotDropdown:Refresh(NuevosModelos, {}) end
     end
 })
 
--- 3. Dropdown de Modelos (Dinámico)
 BrainrotDropdown = Section:Dropdown({
     Title = "2. Seleccionar Brainrots",
     Multi = true,
-    Values = {}, -- Inicia vacío
-    Callback = function(val)
-        SelectedModels = val
-    end
+    Values = {},
+    Callback = function(val) SelectedModels = val end
 })
 
--- Toggle Activador
 Section:Toggle({
-    Title = "ACTIVAR ESP (Speed Hub Style)",
-    Callback = function(state)
-        ESP_Enabled = state
+    Title = "Activar ESP Total",
+    Callback = function(state) 
+        ESP_Enabled = state 
         if not state then
-            -- Limpieza al desactivar
             for _, v in pairs(workspace:GetDescendants()) do
                 if v.Name == "VortexVisual" or v.Name == "VortexInfo" then v:Destroy() end
             end
@@ -73,79 +47,60 @@ Section:Toggle({
     end
 })
 
--- 4. Bucle Visual (Highlight + BillboardGui)
+-- BUCLE OPTIMIZADO: Muestra TODOS los seleccionados
 task.spawn(function()
     while true do
         if ESP_Enabled then
             local ActiveFolder = workspace:FindFirstChild("ActiveBrainrots")
             if ActiveFolder then
+                -- Escaneamos todas las carpetas de rarezas en Workspace
                 for _, rarezaGroup in pairs(ActiveFolder:GetChildren()) do
-                    -- Detectar dónde están los modelos (carpeta directa o RenderedBrainrot)
-                    local targets = {}
-                    if rarezaGroup:FindFirstChild("RenderedBrainrot") then
-                        targets = rarezaGroup.RenderedBrainrot:GetChildren()
-                    else
-                        targets = rarezaGroup:GetChildren()
-                    end
-
-                    for _, brainrot in pairs(targets) do
+                    local container = rarezaGroup:FindFirstChild("RenderedBrainrot") or rarezaGroup
+                    
+                    for _, brainrot in pairs(container:GetChildren()) do
                         if brainrot:IsA("Model") and table.find(SelectedModels, brainrot.Name) then
-                            
-                            -- A) HIGHLIGHT (Aura Roja)
+                            -- Crear Highlight si no existe
                             if not brainrot:FindFirstChild("VortexVisual") then
                                 local hl = Instance.new("Highlight", brainrot)
                                 hl.Name = "VortexVisual"
                                 hl.FillColor = Color3.fromRGB(255, 0, 0)
-                                hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-                                hl.FillTransparency = 0.5
-                                hl.OutlineTransparency = 0
+                                hl.OutlineColor = Color3.new(1, 1, 1)
+                                hl.FillTransparency = 0.4
                             end
 
-                            -- B) INFO GUI (Stats Flotantes)
-                            if not brainrot:FindFirstChild("VortexInfo") then
+                            -- Crear/Actualizar Billboard
+                            local ui = brainrot:FindFirstChild("VortexInfo")
+                            if not ui then
                                 local head = brainrot:FindFirstChild("Head") or brainrot.PrimaryPart or brainrot:FindFirstChildWhichIsA("BasePart")
                                 if head then
-                                    local bgui = Instance.new("BillboardGui", brainrot)
-                                    bgui.Name = "VortexInfo"
-                                    bgui.Adornee = head
-                                    bgui.Size = UDim2.new(0, 200, 0, 100)
-                                    bgui.StudsOffset = Vector3.new(0, 4.5, 0)
-                                    bgui.AlwaysOnTop = true
-
-                                    local label = Instance.new("TextLabel", bgui)
-                                    label.Size = UDim2.new(1, 0, 1, 0)
-                                    label.BackgroundTransparency = 1
-                                    label.TextColor3 = Color3.new(1, 1, 1)
-                                    label.TextStrokeTransparency = 0
-                                    label.TextSize = 14
-                                    label.RichText = true
-                                    label.Text = "..."
+                                    ui = Instance.new("BillboardGui", brainrot)
+                                    ui.Name = "VortexInfo"; ui.Adornee = head; ui.AlwaysOnTop = true
+                                    ui.Size = UDim2.new(0, 200, 0, 100); ui.StudsOffset = Vector3.new(0, 4, 0)
+                                    local l = Instance.new("TextLabel", ui)
+                                    l.Size = UDim2.new(1,0,1,0); l.BackgroundTransparency = 1; l.TextColor3 = Color3.new(1,1,1)
+                                    l.TextStrokeTransparency = 0; l.RichText = true; l.TextSize = 14
                                 end
                             end
 
-                            -- C) ACTUALIZAR DATOS
-                            local ui = brainrot:FindFirstChild("VortexInfo")
-                            if ui and ui:FindFirstChild("TextLabel") then
+                            -- Actualizar Stats en tiempo real
+                            if ui then
                                 pcall(function()
-                                    local extents = brainrot:FindFirstChild("ModelExtents")
-                                    local stats = extents and extents:FindFirstChild("StatsGui") and extents.StatsGui.Frame
-                                    local timer = extents and extents:FindFirstChild("TimerGui") and extents.TimerGui.TimeLeft
-
-                                    local lvl = stats and stats:FindFirstChild("Level") and stats.Level.Text or "?"
-                                    local rate = stats and stats:FindFirstChild("Rate") and stats.Rate.Text or "?"
-                                    local time = timer and timer:FindFirstChild("TimeLeft") and timer.TimeLeft.Text or "∞"
-
-                                    ui.TextLabel.Text = string.format(
-                                        '<font size="18"><b>%s</b></font>\n<font color="#FF0000">LVL: %s</font> | <font color="#00FF00">$ %s</font>\n⏳ %s',
-                                        brainrot.Name, lvl, rate, time
-                                    )
+                                    local ext = brainrot:FindFirstChild("ModelExtents")
+                                    local s = ext and ext.StatsGui.Frame
+                                    local t = ext and ext.TimerGui.TimeLeft
+                                    ui.TextLabel.Text = string.format("<b>%s</b>\n<font color='#ff0000'>Lvl: %s</font> | <font color='#00ff00'>$ %s</font>\n⏳ %s", 
+                                    brainrot.Name, s.Level.Text, s.Rate.Text, t.TimeLeft.Text)
                                 end)
                             end
+                        else
+                            -- Limpiar si ya no está seleccionado
+                            if brainrot:FindFirstChild("VortexVisual") then brainrot.VortexVisual:Destroy() end
+                            if brainrot:FindFirstChild("VortexInfo") then brainrot.VortexInfo:Destroy() end
                         end
                     end
                 end
             end
         end
-        task.wait(0.5)
+        task.wait(0.3) -- Escaneo rápido para no perderse nada
     end
 end)
