@@ -1,169 +1,213 @@
 --[[
-    MODULE: ULTRA PRECISION ESP & BEAM SYSTEM (V2)
-    FEATURES: Persistent Attachments, Auto-Rebuild on Death, 0.1s Scan
+    MODULE: VORTEX GOD-MODE ESP
+    ENGINE: Gemini Pro Optimized | Zero Latency | Immortal Beams
 ]]
 
-local Section = _G.EspTab:Section({ Title = "Rastreador de Élite (Beam System)" })
-local Player = game.Players.LocalPlayer
+local Section = _G.EspTab:Section({ Title = "Rastreador Universal (Pro)" })
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
 
-local Settings = {
+-- --- [ CONFIGURACIÓN & ESTADO ] ---
+local Config = {
     Enabled = false,
-    Beams = false,
+    ShowBeams = false,
     MinLevel = 0,
-    RefreshRate = 0.1
+    MaxDistance = 10000, -- Rango infinito practicamente
+    RefreshRate = 0.05 -- Ultra rápido (20 veces por segundo)
 }
 
-local SelectedModels = {}
-local Assets = game:GetService("ReplicatedStorage"):WaitForChild("Assets"):WaitForChild("Brainrots")
+local SelectedTargets = {} 
+local ProcessedObjects = {} -- Cache para no procesar lo mismo 2 veces
 
--- --- [ FUNCIONES DE UTILIDAD ] ---
-local function GetPlayerRoot()
-    local char = Player.Character
-    return char and char:FindFirstChild("HumanoidRootPart")
-end
-
-local function LimpiarVisuales(br)
-    if br:FindFirstChild("VVisual") then br.VVisual:Destroy() end
-    if br:FindFirstChild("VInfo") then br.VInfo:Destroy() end
-    if br:FindFirstChild("VAttach") then br.VAttach:Destroy() end
+-- --- [ CARGA DE ASSETS ] ---
+local function ObtenerListaGlobal()
+    local Lista = {}
+    local Assets = ReplicatedStorage:WaitForChild("Assets")
     
-    local root = GetPlayerRoot()
-    if root then
-        local beam = root:FindFirstChild("Beam_" .. br.Name)
-        if beam then beam:Destroy() end
-    end
-end
-
--- --- [ INTERFAZ ] ---
-Section:Toggle({
-    Title = "Activar ESP",
-    Callback = function(s) Settings.Enabled = s end
-})
-
-Section:Toggle({
-    Title = "Activar Beams Rojos",
-    Callback = function(s) 
-        Settings.Beams = s 
-        if not s then
-            local root = GetPlayerRoot()
-            if root then
-                for _, v in pairs(root:GetChildren()) do
-                    if v.Name:find("Beam_") or v.Name == "ESP" then v:Destroy() end
-                end
+    -- 1. Brainrots (Están en subcarpetas de rareza)
+    if Assets:FindFirstChild("Brainrots") then
+        for _, rareza in pairs(Assets.Brainrots:GetChildren()) do
+            for _, model in pairs(rareza:GetChildren()) do
+                if not table.find(Lista, model.Name) then table.insert(Lista, model.Name) end
             end
         end
     end
-})
-
-Section:Slider({
-    Title = "Nivel Mínimo",
-    Min = 0, Max = 1000, Default = 0,
-    Callback = function(v) Settings.MinLevel = math.floor(v) end
-})
-
-local BrainrotDropdown
-local function ActualizarDB()
-    local Todos = {}
-    for _, f in pairs(Assets:GetChildren()) do
-        for _, m in pairs(f:GetChildren()) do table.insert(Todos, m.Name) end
+    
+    -- 2. Lucky Blocks (Están sueltos o en carpetas)
+    if Assets:FindFirstChild("LuckyBlocks") then
+        for _, item in pairs(Assets.LuckyBlocks:GetDescendants()) do
+            if item:IsA("Model") or item:IsA("BasePart") then
+                if not table.find(Lista, item.Name) then table.insert(Lista, item.Name) end
+            end
+        end
     end
-    if BrainrotDropdown then BrainrotDropdown:Refresh(Todos, {}) end
+    
+    table.sort(Lista) -- Ordenar alfabéticamente para que se vea bonito
+    return Lista
 end
 
-BrainrotDropdown = Section:Dropdown({
-    Title = "Objetivos",
+-- --- [ INTERFAZ DE USUARIO ] ---
+Section:Toggle({ Title = "Activar ESP Maestro", Callback = function(s) Config.Enabled = s end })
+Section:Toggle({ Title = "Activar Láser Rojo (Beams)", Callback = function(s) Config.ShowBeams = s end })
+Section:Slider({ Title = "Nivel Mínimo (Solo Brainrots)", Min = 0, Max = 2000, Default = 0, Callback = function(v) Config.MinLevel = v end })
+
+local MainDropdown = Section:Dropdown({
+    Title = "Seleccionar Objetivos",
     Multi = true,
-    Values = {},
-    Callback = function(val) SelectedModels = val end
+    Values = ObtenerListaGlobal(), -- Carga automática al inicio
+    Callback = function(val) 
+        SelectedTargets = val 
+        table.clear(ProcessedObjects) -- Limpiar cache al cambiar selección
+    end
 })
 
-Section:Button({ Title = "Refrescar Modelos", Callback = ActualizarDB })
-ActualizarDB()
+Section:Button({ 
+    Title = "Actualizar Lista de Objetos", 
+    Callback = function() MainDropdown:Refresh(ObtenerListaGlobal(), {}) end 
+})
 
--- --- [ MOTOR LÓGICO DE ALTA VELOCIDAD ] ---
+-- --- [ FUNCIONES CORE ] ---
+local function GetRoot()
+    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+end
+
+local function CrearVisuales(model)
+    -- 1. Highlight (Aura)
+    if not model:FindFirstChild("G_Visual") then
+        local hl = Instance.new("Highlight", model)
+        hl.Name = "G_Visual"
+        hl.FillColor = Color3.fromRGB(255, 0, 0)
+        hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+        hl.FillTransparency = 0.5
+        hl.OutlineTransparency = 0
+    end
+
+    -- 2. Billboard (Texto)
+    if not model:FindFirstChild("G_Info") then
+        local bg = Instance.new("BillboardGui", model)
+        bg.Name = "G_Info"; bg.Size = UDim2.new(0, 150, 0, 50); bg.AlwaysOnTop = true
+        bg.StudsOffset = Vector3.new(0, 3.5, 0)
+        
+        local txt = Instance.new("TextLabel", bg)
+        txt.Size = UDim2.new(1,0,1,0); txt.BackgroundTransparency = 1
+        txt.TextColor3 = Color3.new(1,1,1); txt.TextStrokeTransparency = 0
+        txt.TextSize = 14; txt.RichText = true
+        txt.Font = Enum.Font.GothamBold
+    end
+
+    -- 3. Attachment para el Beam (En el objeto)
+    local rootPart = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
+    if rootPart and not model:FindFirstChild("G_Attach") then
+        local att = Instance.new("Attachment", rootPart)
+        att.Name = "G_Attach"
+    end
+end
+
+local function ActualizarBeam(model, playerRoot)
+    if not Config.ShowBeams or not playerRoot then 
+        -- Si beams apagados, borrar si existe
+        local b = playerRoot:FindFirstChild("Beam_"..model.Name)
+        if b then b:Destroy() end
+        return 
+    end
+
+    -- Asegurar Attachment en Jugador (INDISPENSABLE PARA QUE NO FALLE AL MORIR)
+    local playerAtt = playerRoot:FindFirstChild("ESP_PlayerAtt")
+    if not playerAtt then
+        playerAtt = Instance.new("Attachment", playerRoot)
+        playerAtt.Name = "ESP_PlayerAtt"
+    end
+
+    -- Buscar Attachment en Objeto
+    local objAtt = model:FindFirstChild("G_Attach", true)
+    if not objAtt then return end
+
+    -- Crear o Actualizar Beam
+    local beam = playerRoot:FindFirstChild("Beam_"..model.Name)
+    if not beam then
+        beam = Instance.new("Beam", playerRoot)
+        beam.Name = "Beam_"..model.Name
+        beam.Color = ColorSequence.new(Color3.new(1, 0, 0)) -- ROJO PURO
+        beam.Width0 = 0.15; beam.Width1 = 0.15
+        beam.FaceCamera = true
+        beam.Attachment0 = playerAtt
+        beam.Attachment1 = objAtt
+    elseif beam.Attachment0 ~= playerAtt then
+        -- RECONEXIÓN AUTOMÁTICA SI MUERES
+        beam.Attachment0 = playerAtt
+    end
+end
+
+-- --- [ BUCLE DE ALTO RENDIMIENTO ] ---
 task.spawn(function()
     while true do
-        local root = GetPlayerRoot()
+        local MyRoot = GetRoot()
         
-        if Settings.Enabled and root then
-            -- 1. Gestión del Attachment del Jugador (Persistencia)
-            local attPlayer = root:FindFirstChild("ESP")
-            if Settings.Beams and not attPlayer then
-                attPlayer = Instance.new("Attachment", root)
-                attPlayer.Name = "ESP"
-            end
-
-            local ActiveFolder = workspace:FindFirstChild("ActiveBrainrots")
-            if ActiveFolder then
-                for _, rareza in pairs(ActiveFolder:GetChildren()) do
-                    local container = rareza:FindFirstChild("RenderedBrainrot") or rareza
-                    
-                    for _, br in pairs(container:GetChildren()) do
-                        if br:IsA("Model") and table.find(SelectedModels, br.Name) then
-                            pcall(function()
-                                local brRoot = br.PrimaryPart or br:FindFirstChildWhichIsA("BasePart")
-                                local stats = br.ModelExtents.StatsGui.Frame
-                                local lvl = tonumber(stats.Level.Text:match("%d+")) or 0
-                                
-                                if lvl >= Settings.MinLevel then
-                                    -- Highlight
-                                    if not br:FindFirstChild("VVisual") then
-                                        local hl = Instance.new("Highlight", br)
-                                        hl.Name = "VVisual"; hl.FillColor = Color3.new(1,0,0)
-                                    end
-
-                                    -- Billboard
-                                    if not br:FindFirstChild("VInfo") then
-                                        local bg = Instance.new("BillboardGui", br)
-                                        bg.Name = "VInfo"; bg.Size = UDim2.new(0,140,0,50); bg.AlwaysOnTop = true; bg.StudsOffset = Vector3.new(0,4,0)
-                                        local tl = Instance.new("TextLabel", bg)
-                                        tl.Size = UDim2.new(1,0,1,0); tl.BackgroundTransparency = 1; tl.TextColor3 = Color3.new(1,1,1); tl.RichText = true
-                                    end
-                                    br.VInfo.TextLabel.Text = "<b>"..br.Name.."</b>\n<font color='#ff0000'>Lv: "..lvl.."</font>"
-
-                                    -- Sistema de Beams con Re-conexión
-                                    if Settings.Beams and attPlayer then
-                                        local attBR = br:FindFirstChild("VAttach") or Instance.new("Attachment", brRoot)
-                                        attBR.Name = "VAttach"
-
-                                        local beam = root:FindFirstChild("Beam_" .. br.Name)
-                                        if not beam then
-                                            beam = Instance.new("Beam", root)
-                                            beam.Name = "Beam_" .. br.Name
-                                            beam.Color = ColorSequence.new(Color3.new(1, 0, 0))
-                                            beam.Width0, beam.Width1 = 0.2, 0.2
-                                            beam.FaceCamera = true
-                                            beam.Attachment0 = attPlayer
-                                            beam.Attachment1 = attBR
-                                        elseif beam.Attachment0 ~= attPlayer then
-                                            -- Si el attachment cambió (por muerte), re-conectar
-                                            beam.Attachment0 = attPlayer
-                                        end
-                                    else
-                                        local b = root:FindFirstChild("Beam_" .. br.Name)
-                                        if b then b:Destroy() end
-                                    end
-                                else
-                                    LimpiarVisuales(br)
-                                end
-                            end)
-                        else
-                            LimpiarVisuales(br)
+        if Config.Enabled and MyRoot then
+            -- Carpetas a escanear (Expandible)
+            local Targets = {}
+            local Folders = {workspace:FindFirstChild("ActiveBrainrots"), workspace:FindFirstChild("ActiveLuckyBlocks")}
+            
+            -- Recolección rápida de objetos
+            for _, folder in pairs(Folders) do
+                if folder then
+                    for _, obj in pairs(folder:GetDescendants()) do
+                        if obj:IsA("Model") and table.find(SelectedTargets, obj.Name) then
+                            table.insert(Targets, obj)
                         end
                     end
                 end
             end
-        elseif not Settings.Enabled then
-            -- Limpieza total si se apaga el ESP
-            for _, v in pairs(workspace:GetDescendants()) do
-                if v.Name == "VVisual" or v.Name == "VInfo" or v.Name == "VAttach" then v:Destroy() end
+
+            -- Procesamiento
+            for _, model in pairs(Targets) do
+                pcall(function()
+                    local shouldShow = true
+                    
+                    -- Filtro de Nivel (Solo si tiene StatsGui)
+                    local stats = model:FindFirstChild("ModelExtents") and model.ModelExtents:FindFirstChild("StatsGui")
+                    if stats then
+                        local lvlText = stats.Frame.Level.Text
+                        local lvl = tonumber(string.match(lvlText, "%d+")) or 0
+                        if lvl < Config.MinLevel then shouldShow = false end
+                        
+                        -- Actualizar Texto con Datos Reales
+                        if model:FindFirstChild("G_Info") then
+                            model.G_Info.TextLabel.Text = string.format("<b>%s</b>\n<font color='#ff4444'>Lv: %d</font>", model.Name, lvl)
+                        end
+                    else
+                        -- Es un Lucky Block u otra cosa sin nivel
+                        if model:FindFirstChild("G_Info") then
+                            model.G_Info.TextLabel.Text = "<b>"..model.Name.."</b>\n<font color='#FFFF00'>🍀 LUCKY</font>"
+                        end
+                    end
+
+                    if shouldShow then
+                        CrearVisuales(model)
+                        ActualizarBeam(model, MyRoot)
+                    else
+                        -- Si no pasa el filtro (nivel bajo), limpiar
+                        if model:FindFirstChild("G_Visual") then model.G_Visual:Destroy() end
+                        if model:FindFirstChild("G_Info") then model.G_Info:Destroy() end
+                        local b = MyRoot:FindFirstChild("Beam_"..model.Name)
+                        if b then b:Destroy() end
+                    end
+                end)
             end
-            if root then
-                for _, v in pairs(root:GetChildren()) do
-                    if v.Name:find("Beam_") or v.Name == "ESP" then v:Destroy() end
+        else
+            -- Limpieza Total si se apaga
+            for _, v in pairs(workspace:GetDescendants()) do
+                if v.Name == "G_Visual" or v.Name == "G_Info" or v.Name == "G_Attach" then v:Destroy() end
+            end
+            if MyRoot then
+                for _, v in pairs(MyRoot:GetChildren()) do
+                    if string.find(v.Name, "Beam_") then v:Destroy() end
                 end
             end
         end
-        task.wait(Settings.RefreshRate)
+        
+        task.wait(Config.RefreshRate) -- 0.05s = Actualización casi instantánea
     end
 end)
