@@ -3,37 +3,34 @@ local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/rel
 
 local Window = WindUI:CreateWindow({
     Title = "VORTEX HUB",
-    Icon = "lucide-zap", 
-    Author = "Simple-MC & Gemini Pro",
+    Icon = "zap", 
+    Author = "Simple-MC",
     Folder = "VortexConfig"
 })
 
--- Función para cargar módulos desde tu repositorio
 local function LoadModule(name)
     local url = "https://raw.githubusercontent.com/Simple-MC/Vortex-Hub/main/Modules/" .. name .. ".lua"
     local success, result = pcall(function()
         return loadstring(game:HttpGet(url))()
     end)
-    
-    if not success then
-        warn("Error cargando módulo: " .. name .. " | " .. result)
-    end
+    if not success then warn("Fallo al cargar " .. name .. ": " .. tostring(result)) end
 end
 
--- DEFINICIÓN DE TABS GLOBALES (Deben llamarse igual en los módulos)
-_G.MainTab = Window:Tab({ Title = "Principal", Icon = "lucide-home" }) -- Aquí va el AutoFarm
-_G.EspTab = Window:Tab({ Title = "Visuales", Icon = "lucide-eye" })    -- Aquí va el ESP Dinámico
-_G.UtilitiesTab = Window:Tab({ Title = "Utilidades", Icon = "lucide-settings" }) -- Aquí va VIP e Instant Prompt
-_G.CombatTab = Window:Tab({ Title = "Combate", Icon = "lucide-swords" }) -- Aquí va el Anti-Kill
+-- DEFINICIÓN DE TABS
+_G.MainTab = Window:Tab({ Title = "Principal", Icon = "lucide-home" }) -- Aquí va AutoFarm y Local Player
+_G.CombatTab = Window:Tab({ Title = "Combate", Icon = "lucide-swords" }) -- God Mode
+_G.EspTab = Window:Tab({ Title = "Visuales", Icon = "lucide-eye" })    -- ESP Brainrots/LuckyBlocks
+_G.UtilitiesTab = Window:Tab({ Title = "Utilidades", Icon = "lucide-settings" }) -- VIP, Prompts
 
--- CARGA DE MÓDULOS (Asegúrate de que los nombres de los archivos en GitHub sean idénticos)
-LoadModule("Visuals")   -- Temporizadores
-LoadModule("Esp")        -- ESP de Brainrots con Dropdowns
-LoadModule("Utilities")  -- VIP Free e Instant Prompt
-LoadModule("Combat")     -- Anti-Kill y protección
+-- CARGA DE MÓDULOS
+LoadModule("Local")      -- (Velocidad, Salto, Fly)
+LoadModule("Visuals")    -- Temporizadores del mapa
+LoadModule("Combat")     -- God Mode y Anti-Muros
+LoadModule("Esp")        -- El ESP avanzado (Brainrots y LuckyBlocks)
+LoadModule("Utilities")  -- VIP y Prompts
 
 WindUI:Notify({
     Title = "VORTEX HUB",
-    Content = "Módulos cargados correctamente. ¡A farmear!",
+    Content = "Sistema cargado. ¡A farmear!",
     Duration = 5
 })
