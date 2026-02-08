@@ -4,7 +4,7 @@ local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/rel
 local Window = WindUI:CreateWindow({
     Title = "VORTEX HUB",
     Icon = "lucide-zap", 
-    Author = "Simple-MC & Gemini",
+    Author = "Simple-MC & Gemini Pro",
     Folder = "VortexConfig"
 })
 
