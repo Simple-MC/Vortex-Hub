@@ -3,7 +3,7 @@ local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/rel
 
 local Window = WindUI:CreateWindow({
     Title = "VORTEX HUB",
-    Icon = "zap", 
+    Icon = "terminal", 
     Author = "Simple-MC",
     Folder = "VortexConfig"
 })
@@ -17,10 +17,10 @@ local function LoadModule(name)
 end
 
 -- DEFINICIÓN DE TABS
-_G.MainTab = Window:Tab({ Title = "Principal", Icon = "lucide-home" }) -- Aquí va AutoFarm y Local Player
-_G.CombatTab = Window:Tab({ Title = "Combate", Icon = "lucide-swords" }) -- God Mode
-_G.EspTab = Window:Tab({ Title = "Visuales", Icon = "lucide-eye" })    -- ESP Brainrots/LuckyBlocks
-_G.UtilitiesTab = Window:Tab({ Title = "Utilidades", Icon = "lucide-settings" }) -- VIP, Prompts
+_G.MainTab = Window:Tab({ Title = "Principal", Icon = "house" }) -- Aquí va AutoFarm y Local Player
+_G.CombatTab = Window:Tab({ Title = "Combate", Icon = "swords" }) -- God Mode
+_G.EspTab = Window:Tab({ Title = "Visuales", Icon = "eye" })    -- ESP Brainrots/LuckyBlocks
+_G.UtilitiesTab = Window:Tab({ Title = "Utilidades", Icon = "code-xml" }) -- VIP, Prompts
 
 -- CARGA DE MÓDULOS
 LoadModule("Local")      -- (Velocidad, Salto, Fly)
