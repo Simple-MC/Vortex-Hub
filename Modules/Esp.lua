@@ -1,9 +1,9 @@
 --[[
-    MODULE: VORTEX ESP - RARITY LOGIC (v5)
+    MODULE: VORTEX ESP - v6 (FINAL POLISHED)
     FIXES:
-    1. "Rarity ESP": Detects mobs inside Rarity folders (Common, Legendary, etc.)
-    2. "Model ESP": Unpacks folders to show real mob names (Skibidi, etc.)
-    3. Works for both Brainrots (Folders) and LuckyBlocks (Spawn Names)
+    1. "RenderedBrainrot" Fix: Now finds the REAL mob inside the container.
+    2. Instant OFF: Visuals clear immediately when you toggle off.
+    3. Retains all Rarity/Neon Beam logic from v5.
 ]]
 
 local Players = game:GetService("Players")
@@ -19,41 +19,63 @@ local Config = {
     Brainrots = { 
         Enabled = false, 
         Beams = false, 
-        RarityTargets = {}, -- Lista de rarezas (Legendary, etc.)
-        ModelTargets = {}   -- Lista de nombres (Skibidi, etc.)
+        RarityTargets = {}, 
+        ModelTargets = {}   
     },
     LuckyBlocks = { Enabled = false, Beams = false, Targets = {} }
 }
 
--- --- [ FUNCIONES DE LISTA INTELIGENTE ] ---
+-- --- [ FUNCIONES DE UTILIDAD ] ---
 
--- Opción A: Obtener Nombres de Carpetas (Rarezas)
+-- Función para limpiar visuales INMEDIATAMENTE al desactivar
+local function LimpiarTodo(categoria)
+    local foldersToClean = {}
+    
+    if categoria == "Brainrots" then
+        table.insert(foldersToClean, workspace:FindFirstChild("ActiveBrainrots"))
+    elseif categoria == "LuckyBlocks" then
+        table.insert(foldersToClean, workspace:FindFirstChild("ActiveLuckyBlocks"))
+    end
+
+    for _, folder in pairs(foldersToClean) do
+        if folder then
+            for _, item in pairs(folder:GetDescendants()) do
+                if item.Name == "ESP_H" or item.Name == "ESP_T" or item.Name == "ESP_B" then
+                    item:Destroy()
+                end
+            end
+        end
+    end
+    
+    -- Limpiar attachments del jugador también
+    if LocalPlayer.Character then
+        for _, item in pairs(LocalPlayer.Character:GetDescendants()) do
+            if item.Name == "ESP_Att" then item:Destroy() end
+        end
+    end
+end
+
+-- Funciones de Lista (Igual que v5)
 local function GetRarityNames()
     local names = {}
     local folder = ReplicatedStorage.Assets:FindFirstChild("Brainrots")
     if folder then
         for _, item in pairs(folder:GetChildren()) do
-            if item:IsA("Folder") then
-                table.insert(names, item.Name)
-            end
+            if item:IsA("Folder") then table.insert(names, item.Name) end
         end
     end
     table.sort(names)
     return names
 end
 
--- Opción B: Obtener Nombres REALES de Modelos (Entrando a las carpetas)
 local function GetBrainrotModels()
     local names = {}
     local folder = ReplicatedStorage.Assets:FindFirstChild("Brainrots")
     if folder then
-        -- Entramos a cada carpeta de rareza
         for _, rarityFolder in pairs(folder:GetChildren()) do
             for _, model in pairs(rarityFolder:GetChildren()) do
-                if model:IsA("Model") then
-                    if not table.find(names, model.Name) then
-                        table.insert(names, model.Name)
-                    end
+                if model:IsA("Model") and not table.find(names, model.Name) then
+                    table.insert(names, model.Name)
                 end
             end
         end
@@ -66,9 +88,7 @@ local function GetLuckyBlockNames()
     local names = {}
     local folder = ReplicatedStorage.Assets:FindFirstChild("LuckyBlocks")
     if folder then
-        for _, item in pairs(folder:GetChildren()) do
-            table.insert(names, item.Name)
-        end
+        for _, item in pairs(folder:GetChildren()) do table.insert(names, item.Name) end
     end
     table.sort(names)
     return names
@@ -76,30 +96,40 @@ end
 
 -- --- [ INTERFAZ - BRAINROTS ] ---
 
-SectionBR:Toggle({ Title = "Activar ESP Brainrots", Callback = function(s) Config.Brainrots.Enabled = s end })
+SectionBR:Toggle({ 
+    Title = "Activar ESP Brainrots", 
+    Callback = function(s) 
+        Config.Brainrots.Enabled = s 
+        if not s then LimpiarTodo("Brainrots") end -- Limpieza Instantánea
+    end 
+})
+
 SectionBR:Toggle({ Title = "Láser Rojo Neón", Callback = function(s) Config.Brainrots.Beams = s end })
 
--- DROPDOWN 1: POR RAREZA (Lo que pediste nuevo)
 SectionBR:Dropdown({
-    Title = "Seleccionar por RAREZA (Carpetas)",
-    Desc = "Marca todos los de esta categoría",
+    Title = "Seleccionar por RAREZA",
     Multi = true,
     Values = GetRarityNames(),
     Callback = function(v) Config.Brainrots.RarityTargets = v end
 })
 
--- DROPDOWN 2: POR MODELO ESPECÍFICO (Corregido)
 SectionBR:Dropdown({
-    Title = "Seleccionar por NOMBRE (Específico)",
-    Desc = "Marca solo monstruos específicos",
+    Title = "Seleccionar por NOMBRE",
     Multi = true,
-    Values = GetBrainrotModels(), -- Ahora sí salen los nombres de los bichos
+    Values = GetBrainrotModels(),
     Callback = function(v) Config.Brainrots.ModelTargets = v end
 })
 
 
 -- --- [ INTERFAZ - LUCKY BLOCKS ] ---
-SectionLB:Toggle({ Title = "Activar ESP Lucky Blocks", Callback = function(s) Config.LuckyBlocks.Enabled = s end })
+SectionLB:Toggle({ 
+    Title = "Activar ESP Lucky Blocks", 
+    Callback = function(s) 
+        Config.LuckyBlocks.Enabled = s 
+        if not s then LimpiarTodo("LuckyBlocks") end -- Limpieza Instantánea
+    end 
+})
+
 SectionLB:Toggle({ Title = "Láser Amarillo Neón", Callback = function(s) Config.LuckyBlocks.Beams = s end })
 
 SectionLB:Dropdown({
@@ -174,38 +204,56 @@ local function Limpiar(model)
     if p and p:FindFirstChild("ESP_B") then p.ESP_B:Destroy() end
 end
 
--- --- [ LOOP INTELIGENTE (LA MAGIA) ] ---
+-- --- [ LOOP INTELIGENTE (CORREGIDO) ] ---
 
 task.spawn(function()
     while true do
-        -- 1. BRAINROTS (Lógica Doble: Rareza Y Nombre)
+        -- 1. BRAINROTS
         local folderBR = workspace:FindFirstChild("ActiveBrainrots")
         if folderBR and Config.Brainrots.Enabled then
-            -- Iteramos sobre las carpetas de rareza en Workspace (Ej: workspace.ActiveBrainrots.Legendary)
             for _, rarityFolder in pairs(folderBR:GetChildren()) do
-                -- Verificamos si es una carpeta (Rareza) o un modelo suelto
-                local items = rarityFolder:IsA("Folder") and rarityFolder:GetChildren() or {rarityFolder}
                 
-                for _, m in pairs(items) do
-                    if m:IsA("Model") then
-                        local shouldHighlight = false
-                        
-                        -- CRITERIO A: ¿Está seleccionada la rareza (Nombre de la carpeta padre)?
-                        if table.find(Config.Brainrots.RarityTargets, rarityFolder.Name) then
-                            shouldHighlight = true
+                -- Detectar si hay que entrar a 'RenderedBrainrot'
+                -- Primero buscamos dentro de la carpeta de rareza
+                local items = rarityFolder:GetChildren()
+                
+                -- LÓGICA DE DETECCIÓN PROFUNDA
+                local finalMobs = {}
+                
+                for _, item in pairs(items) do
+                    -- ARREGLO PARA LA FOTO QUE MANDASTE:
+                    if item.Name == "RenderedBrainrot" then
+                        -- Si es el contenedor, agarramos lo que tenga adentro
+                        for _, realMob in pairs(item:GetChildren()) do
+                            if realMob:IsA("Model") then
+                                table.insert(finalMobs, realMob)
+                            end
                         end
-                        
-                        -- CRITERIO B: ¿Está seleccionado el nombre del monstruo?
-                        if table.find(Config.Brainrots.ModelTargets, m.Name) then
-                            shouldHighlight = true
-                        end
+                    elseif item:IsA("Model") then
+                        -- Si es un modelo normal, lo agregamos directo
+                        table.insert(finalMobs, item)
+                    end
+                end
 
-                        if shouldHighlight then
-                            AplicarVisuales(m, Color3.fromRGB(255, 0, 0), m.Name .. "\n["..rarityFolder.Name.."]")
-                            ManejarBeam(m, Color3.fromRGB(255, 0, 0), Config.Brainrots.Beams)
-                        else
-                            Limpiar(m)
-                        end
+                -- AHORA PROCESAMOS LOS MOBS REALES
+                for _, m in pairs(finalMobs) do
+                    local shouldHighlight = false
+                    
+                    -- Filtro por Rareza
+                    if table.find(Config.Brainrots.RarityTargets, rarityFolder.Name) then
+                        shouldHighlight = true
+                    end
+                    -- Filtro por Nombre
+                    if table.find(Config.Brainrots.ModelTargets, m.Name) then
+                        shouldHighlight = true
+                    end
+
+                    if shouldHighlight then
+                        -- Mostrar Nombre Real + Rareza
+                        AplicarVisuales(m, Color3.fromRGB(255, 0, 0), m.Name .. "\n["..rarityFolder.Name.."]")
+                        ManejarBeam(m, Color3.fromRGB(255, 0, 0), Config.Brainrots.Beams)
+                    else
+                        Limpiar(m)
                     end
                 end
             end
@@ -222,7 +270,6 @@ task.spawn(function()
                     end
                     
                     if isTarget then
-                        -- Limpiamos el nombre para que se vea bonito
                         local cleanName = m.Name:gsub("NaturalSpawn", ""):gsub("EventSpawn", ""):gsub("LuckyBlock_", ""):gsub("_", "")
                         AplicarVisuales(m, Color3.fromRGB(255, 255, 0), cleanName)
                         ManejarBeam(m, Color3.fromRGB(255, 255, 0), Config.LuckyBlocks.Beams)
