@@ -17,10 +17,11 @@ local function LoadModule(name)
 end
 
 -- DEFINICIÓN DE TABS
-_G.MainTab = Window:Tab({ Title = "Principal", Icon = "house" }) -- Aquí va AutoFarm y Local Player
+_G.MainTab = Window:Tab({ Title = "Principal", Icon = "house" }) -- Timers, Local Player
 _G.CombatTab = Window:Tab({ Title = "Combate", Icon = "swords" }) -- God Mode
 _G.EspTab = Window:Tab({ Title = "Visuales", Icon = "eye" })    -- ESP Brainrots/LuckyBlocks
 _G.UtilitiesTab = Window:Tab({ Title = "Utilidades", Icon = "code-xml" }) -- VIP, Prompts
+_G.AutoFarmTab = Window:Tab({ Title = "Auto Farm", Icon = "zap" }) -- AUTO FARM 
 
 -- CARGA DE MÓDULOS
 LoadModule("Local")      -- (Velocidad, Salto, Fly)
@@ -28,6 +29,7 @@ LoadModule("Visuals")    -- Temporizadores del mapa
 LoadModule("Combat")     -- God Mode y Anti-Muros
 LoadModule("Esp")        -- El ESP avanzado (Brainrots y LuckyBlocks)
 LoadModule("Utilities")  -- VIP y Prompts
+LoadModule("AutoFarm") 
 
 WindUI:Notify({
     Title = "VORTEX HUB",
