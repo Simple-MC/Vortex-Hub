@@ -1,280 +1,253 @@
 --[[
-    MODULE: VORTEX ESP - NEON EDITION (v3)
+    MODULE: VORTEX GOD-MODE ESP (v4 - Final Fix)
     FIXES:
-    1. SUPER VISIBLE NEON BEAMS (No texture, pure light)
-    2. INSTANT ESP (No switching delay)
-    3. DEEP SEARCH for Lucky Blocks lists
-    4. LEVEL DISPLAY RESTORED (Auto-detect)
+    1. Clean Object List (No internal parts)
+    2. Independent Beams (Shows ALL targets at once)
+    3. Auto-Level Detection
+    4. Instant Refresh
 ]]
 
-local EspTab = _G.EspTab
+local Section = _G.EspTab:Section({ Title = "Rastreador Universal (Pro)" })
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
 
 -- --- [ CONFIGURACIÓN ] ---
 local Config = {
-    Brainrots = { Enabled = false, Beams = false, Targets = {} },
-    LuckyBlocks = { Enabled = false, Beams = false, Targets = {} }
+    Enabled = false,
+    ShowBeams = false,
+    MinLevel = 0,
+    SelectedTargets = {}
 }
 
--- --- [ FUNCIONES DE UTILIDAD ] ---
+-- --- [ UTILIDADES DE BÚSQUEDA ] ---
 
--- Buscador mejorado para las listas (Lucky Blocks / Brainrots)
-local function GetAllAssets(folderName)
-    local uniqueNames = {}
-    -- Buscamos en Assets primero
-    local folder = ReplicatedStorage:FindFirstChild("Assets") 
+-- Función para limpiar la lista y solo obtener NOMBRES DE MODELOS PRINCIPALES
+local function ObtenerListaLimpia()
+    local Names = {}
+    local Assets = ReplicatedStorage:WaitForChild("Assets")
     
-    -- Si no está en Assets, buscamos en todo ReplicatedStorage (búsqueda profunda)
-    if not folder then folder = ReplicatedStorage end
-    
-    local targetFolder = folder:FindFirstChild(folderName) or folder:FindFirstChild(folderName, true)
+    local function ScanFolder(folder)
+        for _, item in pairs(folder:GetChildren()) do
+            if item:IsA("Model") then
+                if not table.find(Names, item.Name) then
+                    table.insert(Names, item.Name)
+                end
+            elseif item:IsA("Folder") then
+                ScanFolder(item) -- Búsqueda recursiva para carpetas dentro de carpetas
+            end
+        end
+    end
 
-    if targetFolder then
-        local function Scan(dir)
-            for _, item in pairs(dir:GetChildren()) do
-                if item:IsA("Model") then
-                    if not table.find(uniqueNames, item.Name) then
-                        table.insert(uniqueNames, item.Name)
-                    end
-                elseif item:IsA("Folder") then
-                    Scan(item)
+    -- Escanear Brainrots y LuckyBlocks
+    if Assets:FindFirstChild("Brainrots") then ScanFolder(Assets.Brainrots) end
+    if Assets:FindFirstChild("LuckyBlocks") then ScanFolder(Assets.LuckyBlocks) end
+    
+    table.sort(Names)
+    return Names
+end
+
+-- Función segura para obtener el Nivel
+local function GetLevel(model)
+    -- Intenta buscar Atributos
+    local lvl = model:GetAttribute("Level") or model:GetAttribute("Nivel")
+    if lvl then return tonumber(lvl) end
+
+    -- Intenta buscar Valores Int/Number
+    local val = model:FindFirstChild("Level") or model:FindFirstChild("Nivel") or model:FindFirstChild("Value")
+    if val and (val:IsA("IntValue") or val:IsA("NumberValue")) then
+        return val.Value
+    end
+    
+    -- Intenta buscar en GUIs (común en Brainrot Tycoons)
+    local head = model:FindFirstChild("Head") or model.PrimaryPart
+    if head and head:FindFirstChildWhichIsA("BillboardGui") then
+        for _, gui in pairs(head:GetChildren()) do
+            if gui:IsA("BillboardGui") then
+                local txt = gui:FindFirstChildWhichIsA("TextLabel", true)
+                if txt and txt.Text then
+                    local num = tonumber(string.match(txt.Text, "%d+"))
+                    if num then return num end
                 end
             end
         end
-        Scan(targetFolder)
-    else
-        warn("⚠ No se encontró la carpeta: " .. folderName)
     end
-    
-    table.sort(uniqueNames)
-    return uniqueNames
+
+    return 0 -- Si no encuentra nada
 end
 
--- Intentar obtener el nivel del objeto (Si existe)
-local function GetLevel(model)
-    -- Intenta buscar Atributos, Valores o Configuración
-    local level = model:GetAttribute("Level") or model:GetAttribute("Nivel")
-    
-    if not level then
-        local val = model:FindFirstChild("Level") or model:FindFirstChild("Value") or model:FindFirstChild("Nivel")
-        if val and val:IsA("IntValue") or val:IsA("NumberValue") then
-            level = val.Value
-        end
-    end
-    
-    return level -- Puede ser nil si no tiene nivel
-end
+-- --- [ INTERFAZ ] ---
 
--- --- [ INTERFAZ (UI) ] ---
-
--- SECCIÓN 1: BRAINROTS
-local SectionBR = EspTab:Section({ Title = "👽 ESP Brainrots" })
-
-SectionBR:Toggle({
-    Title = "Activar Visuales",
-    Callback = function(s) Config.Brainrots.Enabled = s end
+Section:Toggle({ 
+    Title = "Activar ESP Maestro", 
+    Callback = function(s) Config.Enabled = s end 
 })
 
-SectionBR:Toggle({
-    Title = "Láser ROJO NEÓN (Beams)",
-    Callback = function(s) Config.Brainrots.Beams = s end
+Section:Toggle({ 
+    Title = "Activar Láser Rojo (Beams)", 
+    Callback = function(s) Config.ShowBeams = s end 
 })
 
-local DropdownBR = SectionBR:Dropdown({
-    Title = "Seleccionar Brainrots",
+Section:Slider({ 
+    Title = "Filtrar por Nivel Mínimo", 
+    Min = 0, Max = 1000, Default = 0, 
+    Callback = function(v) Config.MinLevel = v end 
+})
+
+local MainDropdown = Section:Dropdown({
+    Title = "Seleccionar Objetivos",
     Multi = true,
-    Values = GetAllAssets("Brainrots"),
-    Callback = function(v) Config.Brainrots.Targets = v end
+    Values = ObtenerListaLimpia(),
+    Callback = function(val) Config.SelectedTargets = val end
 })
 
--- SECCIÓN 2: LUCKY BLOCKS
-local SectionLB = EspTab:Section({ Title = "🍀 ESP Lucky Blocks" })
-
-SectionLB:Toggle({
-    Title = "Activar Visuales",
-    Callback = function(s) Config.LuckyBlocks.Enabled = s end
+Section:Button({ 
+    Title = "🔄 Refrescar Lista", 
+    Callback = function() MainDropdown:Refresh(ObtenerListaLimpia(), Config.SelectedTargets) end 
 })
 
-SectionLB:Toggle({
-    Title = "Láser AMARILLO NEÓN (Beams)",
-    Callback = function(s) Config.LuckyBlocks.Beams = s end
-})
-
-local DropdownLB = SectionLB:Dropdown({
-    Title = "Seleccionar Lucky Blocks",
-    Multi = true,
-    Values = GetAllAssets("LuckyBlocks"),
-    Callback = function(v) Config.LuckyBlocks.Targets = v end
-})
-
-SectionLB:Button({
-    Title = "🔄 Refrescar Listas (Debug)",
-    Callback = function()
-        -- Imprimimos en consola (F9) para ver si encuentra algo
-        local brList = GetAllAssets("Brainrots")
-        local lbList = GetAllAssets("LuckyBlocks")
-        print("Brainrots encontrados:", #brList)
-        print("LuckyBlocks encontrados:", #lbList)
-        
-        DropdownBR:Refresh(brList, Config.Brainrots.Targets)
-        DropdownLB:Refresh(lbList, Config.LuckyBlocks.Targets)
-    end
-})
-
--- --- [ MOTOR VISUAL (CORE NEÓN) ] ---
+-- --- [ MOTOR ESP ] ---
 
 local function GetRoot()
     return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
 end
 
-local function CrearBeamNeon(rootPlayer, targetPart, color)
-    -- Attachments
-    local attPlayer = rootPlayer:FindFirstChild("ESP_Att_Player")
-    if not attPlayer then
-        attPlayer = Instance.new("Attachment", rootPlayer)
-        attPlayer.Name = "ESP_Att_Player"
+local function CrearVisuales(model)
+    local rootPart = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
+    if not rootPart then return end
+
+    -- 1. Highlight (Aura Roja)
+    if not model:FindFirstChild("ESP_Highlight") then
+        local hl = Instance.new("Highlight", model)
+        hl.Name = "ESP_Highlight"
+        hl.FillColor = Color3.fromRGB(255, 0, 0)
+        hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+        hl.FillTransparency = 0.6
+        hl.OutlineTransparency = 0
     end
 
+    -- 2. Billboard (Texto Info)
+    if not model:FindFirstChild("ESP_Info") then
+        local bg = Instance.new("BillboardGui", model)
+        bg.Name = "ESP_Info"; bg.Size = UDim2.new(0, 150, 0, 50); bg.AlwaysOnTop = true
+        bg.StudsOffset = Vector3.new(0, rootPart.Size.Y + 3, 0)
+        bg.Adornee = rootPart
+        
+        local txt = Instance.new("TextLabel", bg)
+        txt.Size = UDim2.new(1,0,1,0); txt.BackgroundTransparency = 1
+        txt.TextColor3 = Color3.new(1,1,1); txt.TextStrokeTransparency = 0
+        txt.TextSize = 12; txt.RichText = true
+        txt.Font = Enum.Font.GothamBold
+        txt.Name = "Label"
+    end
+end
+
+local function ActualizarInfo(model)
+    local infoGui = model:FindFirstChild("ESP_Info")
+    if infoGui then
+        local label = infoGui:FindFirstChild("Label")
+        if label then
+            local lvl = GetLevel(model)
+            if lvl > 0 then
+                label.Text = string.format("%s\n<font color='#FFAA00'>Lv: %d</font>", model.Name, lvl)
+            else
+                label.Text = string.format("%s", model.Name)
+            end
+        end
+    end
+end
+
+local function ManejarBeam(model, myRoot)
+    local targetPart = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
+    if not targetPart then return end
+
+    -- Crear Attachment en el Enemigo
     local attTarget = targetPart:FindFirstChild("ESP_Att_Target")
     if not attTarget then
         attTarget = Instance.new("Attachment", targetPart)
         attTarget.Name = "ESP_Att_Target"
     end
 
+    -- Crear Attachment en Nosotros (Uno solo)
+    local attPlayer = myRoot:FindFirstChild("ESP_Att_Player")
+    if not attPlayer then
+        attPlayer = Instance.new("Attachment", myRoot)
+        attPlayer.Name = "ESP_Att_Player"
+    end
+
+    -- Crear el Beam (En el enemigo apuntando a nosotros)
     local beam = targetPart:FindFirstChild("ESP_Beam")
-    if not beam then
-        beam = Instance.new("Beam", targetPart)
-        beam.Name = "ESP_Beam"
-        beam.Attachment0 = attPlayer
-        beam.Attachment1 = attTarget
-        
-        -- CONFIGURACIÓN NEÓN (SÚPER VISIBLE)
-        beam.Color = ColorSequence.new(color)
-        beam.Width0 = 0.2 -- Un poco más grueso
-        beam.Width1 = 0.2
-        beam.FaceCamera = true
-        
-        -- Sin textura + LightEmission = NEÓN PURO
-        beam.Texture = "" 
-        beam.Transparency = NumberSequence.new(0) -- Totalmente sólido
-        beam.LightEmission = 1 -- Brilla en la oscuridad
-        beam.LightInfluence = 0 -- Ignora sombras
-    else
-        if beam.Attachment0 ~= attPlayer then
+    
+    if Config.ShowBeams then
+        if not beam then
+            beam = Instance.new("Beam", targetPart)
+            beam.Name = "ESP_Beam"
             beam.Attachment0 = attPlayer
-        end
-    end
-end
-
-local function AplicarESP(model, settings, colorBase)
-    if not model or not model.Parent then return end
-
-    local part = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
-    if not part then return end
-
-    -- 1. HIGHLIGHT (Aura Sólida)
-    if not model:FindFirstChild("ESP_Highlight") then
-        local hl = Instance.new("Highlight", model)
-        hl.Name = "ESP_Highlight"
-        hl.FillColor = colorBase
-        hl.OutlineColor = Color3.new(1,1,1)
-        hl.FillTransparency = 0.4 -- Más visible
-        hl.OutlineTransparency = 0
-    end
-
-    -- 2. BILLBOARD (Texto con Nivel)
-    if not model:FindFirstChild("ESP_Text") then
-        local bg = Instance.new("BillboardGui", model)
-        bg.Name = "ESP_Text"; bg.Size = UDim2.new(0,100,0,40); bg.AlwaysOnTop = true
-        bg.StudsOffset = Vector3.new(0, part.Size.Y + 2.5, 0); bg.Adornee = part
-        
-        local lbl = Instance.new("TextLabel", bg)
-        lbl.Size = UDim2.new(1,0,1,0); lbl.BackgroundTransparency = 1
-        lbl.TextColor3 = colorBase; lbl.TextStrokeTransparency = 0
-        lbl.TextStrokeColor3 = Color3.new(0,0,0)
-        lbl.Font = Enum.Font.GothamBlack; lbl.TextSize = 14 -- Fuente más gruesa
-        
-        -- Recuperar Nivel
-        local lvl = GetLevel(model)
-        if lvl then
-            lbl.Text = model.Name .. " [Nv. " .. tostring(lvl) .. "]"
+            beam.Attachment1 = attTarget
+            beam.Color = ColorSequence.new(Color3.fromRGB(255, 0, 0)) -- Rojo Puro
+            beam.Width0 = 0.1; beam.Width1 = 0.1
+            beam.FaceCamera = true
+            beam.Texture = "" -- Sin textura = Neón Sólido
+            beam.LightEmission = 1
+            beam.LightInfluence = 0
         else
-            lbl.Text = model.Name
+            -- Actualizar referencia si revivimos
+            if beam.Attachment0 ~= attPlayer then
+                beam.Attachment0 = attPlayer
+            end
         end
-    end
-
-    -- 3. BEAMS (Láser Neón)
-    if settings.Beams and GetRoot() then
-        CrearBeamNeon(GetRoot(), part, colorBase)
     else
-        local oldBeam = part:FindFirstChild("ESP_Beam")
-        if oldBeam then oldBeam:Destroy() end
+        if beam then beam:Destroy() end
     end
 end
 
-local function LimpiarESP(model)
+local function Limpiar(model)
     if model:FindFirstChild("ESP_Highlight") then model.ESP_Highlight:Destroy() end
-    if model:FindFirstChild("ESP_Text") then model.ESP_Text:Destroy() end
-    if model:FindFirstChildWhichIsA("BasePart") then
-        local part = model:FindFirstChildWhichIsA("BasePart")
-        if part:FindFirstChild("ESP_Beam") then part.ESP_Beam:Destroy() end
+    if model:FindFirstChild("ESP_Info") then model.ESP_Info:Destroy() end
+    
+    local root = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
+    if root then
+        if root:FindFirstChild("ESP_Beam") then root.ESP_Beam:Destroy() end
     end
 end
 
--- --- [ LOOP RÁPIDO ] ---
--- Usamos 'ipairs' donde sea posible y no usamos 'else Limpiar' agresivo para evitar parpadeos
-
+-- --- [ BUCLE PRINCIPAL ] ---
 task.spawn(function()
     while true do
-        local root = GetRoot()
+        local MyRoot = GetRoot()
         
-        if root then
-            -- A) BRAINROTS
-            if Config.Brainrots.Enabled then
-                local FolderBR = workspace:FindFirstChild("ActiveBrainrots")
-                if FolderBR then
-                    for _, sub in pairs(FolderBR:GetChildren()) do
-                        -- Algunos juegos usan carpetas de "Rarity", otros no. Revisamos todo.
-                        local items = sub:IsA("Folder") and sub:GetChildren() or {sub}
-                        
-                        -- Si la carpeta tiene una subcarpeta "Rendered...", usar esa
-                        if sub:FindFirstChild("RenderedBrainrot") then
-                            items = sub.RenderedBrainrot:GetChildren()
-                        end
+        if Config.Enabled and MyRoot then
+            local ActiveFolders = {
+                workspace:FindFirstChild("ActiveBrainrots"),
+                workspace:FindFirstChild("ActiveLuckyBlocks"),
+                workspace:FindFirstChild("Drops") -- A veces los items caen aquí
+            }
 
-                        for _, m in pairs(items) do
-                            if m:IsA("Model") and table.find(Config.Brainrots.Targets, m.Name) then
-                                AplicarESP(m, Config.Brainrots, Color3.fromRGB(255, 0, 0)) -- ROJO NEÓN
-                            elseif m:IsA("Model") then
-                                -- Solo limpiamos si NO está en la lista pero tiene ESP (cambio de target)
-                                if m:FindFirstChild("ESP_Highlight") then LimpiarESP(m) end
-                            end
-                        end
-                    end
-                end
-            end
-
-            -- B) LUCKY BLOCKS
-            if Config.LuckyBlocks.Enabled then
-                local FolderLB = workspace:FindFirstChild("ActiveLuckyBlocks")
-                if FolderLB then
-                    -- Usamos GetDescendants con filtro para asegurar encontrar todo
-                    for _, m in pairs(FolderLB:GetDescendants()) do
-                        if m:IsA("Model") then
-                            if table.find(Config.LuckyBlocks.Targets, m.Name) then
-                                AplicarESP(m, Config.LuckyBlocks, Color3.fromRGB(255, 230, 0)) -- AMARILLO NEÓN
+            for _, folder in pairs(ActiveFolders) do
+                if folder then
+                    -- Usamos GetDescendants con cuidado para encontrar Modelos anidados
+                    for _, obj in pairs(folder:GetDescendants()) do
+                        if obj:IsA("Model") and table.find(Config.SelectedTargets, obj.Name) then
+                            
+                            local lvl = GetLevel(obj)
+                            -- Filtro de Nivel
+                            if lvl >= Config.MinLevel then
+                                CrearVisuales(obj)
+                                ActualizarInfo(obj)
+                                ManejarBeam(obj, MyRoot)
                             else
-                                if m:FindFirstChild("ESP_Highlight") then LimpiarESP(m) end
+                                Limpiar(obj)
                             end
                         end
                     end
                 end
             end
+        else
+            -- Si desactivamos, limpiamos todo visual
+            -- (Opcional: Implementar limpieza global más eficiente si da lag)
         end
         
-        task.wait(0.1) -- Actualización rápida
+        task.wait(0.1) -- 10 veces por segundo es suficiente y ahorra recursos
     end
 end)
