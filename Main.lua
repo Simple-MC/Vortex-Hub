@@ -27,7 +27,8 @@ _G.AutoFarmTab = Window:Tab({ Title = "Auto Farm", Icon = "zap" }) -- AUTO FARM
 LoadModule("Local")      -- (Velocidad, Salto, Fly)
 LoadModule("Visuals")    -- Temporizadores del mapa
 LoadModule("Combat")     -- God Mode y Anti-Muros
-LoadModule("Esp")        -- El ESP avanzado (Brainrots y LuckyBlocks)
+LoadModule("Esp")        -- El ESP
+LoadModule("Esp2")        -- El ESP avanzado (Brainrots y LuckyBlocks)
 LoadModule("Utilities")  -- VIP y Prompts
 LoadModule("AutoFarm") 
 
