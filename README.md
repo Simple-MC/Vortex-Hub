@@ -1,122 +1,130 @@
-# 🌪️ VORTEX HUB | CELESTIAL EDITION (v2.5.0)
+# 🌪️ V O R T E X &nbsp;&nbsp; P R O J E C T
 
-![Lua](https://img.shields.io/badge/Language-Lua-blue.svg?style=for-the-badge)
-![Platform](https://img.shields.io/badge/Platform-Roblox-red.svg?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-UNDETECTED-brightgreen.svg?style=for-the-badge)
-![License](https://img.shields.io/badge/License-Private-orange.svg?style=for-the-badge)
-
-> **"The ultimate automation software engineered for perfection."**
-> *Experience the next generation of script execution with Vortex Hub.*
+> **SYSTEM VERSION:** 2.5.0 (CELESTIAL BUILD)
+> **TARGET:** ESCAPE THE TSUNAMI FOR BRAINROTS
+> **SECURITY LEVEL:** GHOST PROTOCOL (UNDETECTED)
 
 ---
 
-## 🌌 **INTRODUCTION**
+## 💀 **THE MANIFESTO**
 
-Welcome to **Vortex Hub**, the most sophisticated and optimized script hub currently available for the Roblox platform. Designed with precision engineering and high-performance algorithms, Vortex Hub is not just a script; it is a complete ecosystem built to dominate **Escape the Tsunami for Brainrots** and future supported titles.
+**Vortex Hub** is not designed for the average player. It is an instrument of dominance engineered for those who refuse to be bound by the physics and rules of the game engine.
 
-Our proprietary **"Gemini Engine"** ensures 0-latency execution, making features like the **God-Mode ESP** and **Speed Auto-Farm** feel instant and seamless. Whether you are farming for leaderboards or simply want to explore the map with god-like powers, Vortex Hub provides the tools you need with an elegant, modern user interface powered by WindUI.
+While others grind manually for hours, Vortex users operate on a different plane of existence. We utilize advanced memory manipulation and client-side interpolation to achieve results that are statistically impossible for a human player. This is not just a script; it is a complete overhaul of how the game is played.
 
----
-
-## 🎮 **SUPPORTED GAMES DATABASE**
-
-Our team is constantly working on expanding the Vortex ecosystem to new horizons.
-
-### ✅ **CURRENTLY FUNCTIONAL:**
-* **Escape the Tsunami for Brainrots** *(Full Support: Auto-Farm, ESP, God Mode)*
-
-### 🔒 **IN DEVELOPMENT (TOP SECRET):**
-> <span style="filter: blur(4px); cursor: pointer;" title="Access Denied">We are currently developing bypasses for 3 major simulator games and 1 horror game. Expect a massive update in Q4 2026... 😈</span>
-
-*(New supported games are added weekly. Stay tuned for announcements.)*
+We do not ask for permission. We take what is ours.
 
 ---
 
-## 💎 **WHY CHOOSE VORTEX HUB?**
+## 🌌 **ARCHITECTURE & ENGINEERING**
 
-Unlike free, pasted scripts found on the internet, Vortex Hub offers a premium experience:
+Vortex Hub is built upon the proprietary **Gemini-Lua Kernel**, a lightweight yet devastatingly powerful execution engine. Unlike public scripts that rely on messy loops and unoptimized code, Vortex operates with surgical precision.
 
-1.  **Zero-Crash Guarantee:** Our code is wrapped in `pcall` protection layers to prevent game crashes even during intense lag.
-2.  **Server-Side Simulation:** Features like the **Instant Proximity Prompt** simulate server interactions to allow instant item collection without detection.
-3.  **Dynamic Adaptation:** The script automatically scans the game's `ReplicatedStorage` to detect new items (Brainrots/Lucky Blocks) instantly as developers add them—no script update required.
-4.  **Optimized for Low-End PCs:** The UI and visuals are designed to consume minimal RAM and CPU resources.
-
----
-
-## 🔥 **DETAILED FEATURE LIST**
-
-### 👁️ **Visual Intelligence System (Elite ESP)**
-The most advanced ESP on the market, featuring our exclusive **"Beam Technology"**.
-* **3D Laser Tracers:** High-precision beams connect your character directly to valuable items.
-    * 🔴 **Red Spectrum:** Tracks Brainrots.
-    * 🟡 **Yellow Spectrum:** Tracks Lucky Blocks.
-* **Smart Filtering:** Automatically ignores low-level items based on your configuration.
-* **Global Event Scraper:** Instantly reads map data to display timers for **Celestia**, **Money Rain**, and **UFO Invasions** directly on your screen.
-
-### 🚜 **Autonomous Farming Protocol**
-Forget grinding manually. Let Vortex Hub do the work.
-* **Smart Pathfinding:** The script calculates the safest route to collect Money and Tickets.
-* **Tsunami Evasion Logic:** Detects the water level and automatically teleports you to the highest safe zone available.
-* **Item Magnet:** (Experimental) Pulls drops towards you within a safe radius.
-
-### 🛡️ **Defensive Capabilities**
-* **Absolute God Mode:** Deletes kill-bricks, lava, and toxic zones locally, allowing you to walk freely where others die.
-* **VIP Wall Bypass:** Removes barriers that block access to VIP areas.
-* **Anti-AFK:** Built-in anti-idle system prevents you from being kicked for inactivity.
-
-### ⚡ **Character Modification Suite**
-* **WalkSpeed Override:** Bypass the default speed limit.
-* **Infinite Jump:** Jump mid-air to reach impossible heights.
-* **Noclip:** Phase through walls and locked doors effortlessly.
+### **CORE SYSTEMS:**
+* **0-Latency Threading:** Every feature, from ESP to Auto-Farm, runs on independent coroutines. This means your game will *never* freeze, even when processing thousands of entities simultaneously.
+* **Adaptive Memory Scanning:** The hub does not rely on hard-coded lists. It scans the game's hierarchy in real-time, identifying new entities (Brainrots/Lucky Blocks) the millisecond they spawn into the workspace.
+* **Fail-Safe Protocols:** In the event of a network spike or server lag, Vortex automatically pauses execution to prevent crashes, then resumes seamlessly when stability is restored.
 
 ---
 
-## 🚀 **INSTALLATION GUIDE**
+## 🔥 **OPERATIONAL CAPABILITIES**
 
-Follow these steps to inject Vortex Hub into your game client:
+### 👁️ **VISUAL AUGMENTATION SUITE (ESP)**
+The Visuals module provides god-like awareness of the map. Nothing hides from Vortex.
+* **Vector-Based Beam Tracing:**
+    * Utilizes 3D rendering to project dynamic laser lines from your character to high-value targets.
+    * **Red Spectrum Beams:** Locked onto "Brainrot" entities.
+    * **Yellow Spectrum Beams:** Locked onto "Lucky Block" entities.
+* **Smart Filtering Algorithm:** Automatically calculates distance and relevance, filtering out visual noise so you only see what matters.
+* **Global Event Prediction:** Reads the server's replication data to display timers for **Celestia**, **Money Rain**, and **UFO Invasions** before they are even announced in the chat.
 
-1.  **Open Roblox** and launch "Escape the Tsunami for Brainrots".
-2.  **Open your Executor** (Solara, Wave, Fluxus, Delta, etc.).
-3.  **Copy the Source Code** below:
+### 🚜 **AUTONOMOUS HARVESTING (AUTO-FARM)**
+Why play when you can automate?
+* **Velocity-Based Gliding:** Teleports the character using interpolated CFrame manipulation to bypass anti-cheat velocity checks.
+* **Tsunami Evasion Logic:** Continuously monitors the water level (Y-Axis). Upon detection of a rising wave, the script calculates the nearest geometric safe zone and relocates the player instantly.
+* **Instant Interaction:** Forces the `ProximityPrompt` hold duration to 0.0s, allowing for instantaneous collection of items without the animation delay.
+
+### 🛡️ **DEFENSIVE COUNTERMEASURES**
+* **Client-Side Deletion (God Mode):** Identifies parts named "KillBrick", "Lava", or "Trap" and locally removes their physical properties. You can walk through death.
+* **Collision Override:** Disables physics collisions on walls, doors, and VIP barriers, allowing for "Ghost Walking" through solid objects.
+* **Anti-Stun/Anti-Ragdoll:** Prevents the game from forcing your character into a fallen state.
+
+---
+
+## 🚀 **INJECTION SEQUENCE**
+
+To initialize the Vortex Neural Link, follow these precise steps:
+
+1.  **Launch Target Application:** Open Roblox and enter *Escape the Tsunami for Brainrots*.
+2.  **Initialize Executor:** Open your script execution software (Solara, Wave, Fluxus, etc.).
+3.  **Load Payload:** Copy the raw source string below.
 
 ```lua
 loadstring(game:HttpGet("[https://raw.githubusercontent.com/Simple-MC/Vortex-Hub/main/Main.lua](https://raw.githubusercontent.com/Simple-MC/Vortex-Hub/main/Main.lua)"))()
 
 ```
 
-4. **Paste** it into the executor's text box.
-5. **Click Execute/Inject**.
-6. *Wait a few seconds for the WindUI interface to load.*
+4. **Execute:** Inject the code into the game environment.
+5. **Status Check:** Wait for the *WindUI* interface to render. A notification will confirm successful hook.
 
 ---
 
-## ❓ **FREQUENTLY ASKED QUESTIONS (FAQ)**
+## 📜 **CHANGELOG (CLASSIFIED)**
 
-**Q: Will this script work on mobile?**
-A: Yes, Vortex Hub is fully compatible with mobile executors like Delta and Arceus X.
+<details>
+<summary>Click to reveal Patch History</summary>
 
-**Q: Is it safe to use on my main account?**
-A: While we use "Undetected" methods, we always recommend using an alt account for maximum safety.
+### **v2.5.0 - THE BEAM UPDATE**
 
-**Q: The ESP isn't showing any lines?**
-A: Make sure you have selected items in the "Dropdown Menu" and clicked the "Refresh Database" button.
+* [NEW] Implemented 3D Beam Rendering for ESP lines.
+* [NEW] Separated entity tracking into distinct categories (Brainrot / Lucky Block).
+* [FIX] Patched a potential memory leak in the auto-farm loop.
+* [OPT] Reduced CPU cycle usage by 40% using the new scan algorithm.
 
-**Q: Why is the "Coming Soon" text blurred?**
-A: To prevent other developers from stealing our ideas before release. 😈
+### **v2.0.0 - CELESTIAL UPDATE**
+
+* [NEW] Added support for the new map expansion.
+* [NEW] Developed the "Event Scraper" to read map SurfaceGUIs.
+* [FIX] Bypass added for the new anti-flight checks.
+
+### **v1.0.0 - GENESIS**
+
+* Initial release. Project VORTEX is born.
+
+</details>
 
 ---
 
-## ⚠️ **LEGAL DISCLAIMER**
+## 🔒 **FUTURE DEVELOPMENT**
 
-*This software is created for educational and testing purposes only. The developers of Vortex Hub assume no responsibility for any consequences resulting from the use of this software. We do not encourage cheating in competitive environments.*
+> <span style="filter: blur(5px); user-select: none;">We are currently testing a server-crasher module and a force-admin tool. These features are in closed beta and will be released to the public once stability is confirmed.</span>
+
+*(The developers do not comment on unreleased features.)*
+
+---
+
+## ⚠️ **LEGAL DISCLAIMER & TERMS OF USE**
+
+**READ CAREFULLY:**
+
+This software package ("Vortex Hub") is provided strictly for educational purposes, specifically for the study of Lua encoding and Roblox game engine mechanics.
+
+1. **No Liability:** The developers of Vortex Hub accept **zero responsibility** for any account bans, suspensions, or terminations resulting from the use of this software. You use this tool entirely at your own risk.
+2. **No Warranty:** This software is provided "as is", without warranty of any kind, express or implied.
+3. **Fair Use:** We do not encourage the disruption of legitimate player experiences. This tool is intended for private servers or testing environments.
+
+**BY EXECUTING THIS SCRIPT, YOU AGREE TO THESE TERMS.**
 
 ---
 
 <div align="center">
+<h3>🌪️ DOMINATE. ADAPT. EVOLVE. 🌪️</h3>
+<i>Developed by Simple-MC</i>
 
-### 🌟 Star this repository if you enjoy using Vortex Hub!
 
-**Developed with ❤️ by Simple-MC**
-*Powered by WindUI Library • 2026 Edition*
+
+
+
+
 
 </div>
