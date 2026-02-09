@@ -1,7 +1,7 @@
 -- Modules/Local.lua
 --[[
     MODULE: LOCAL PLAYER
-    FEATURES: Speed, Jump, NoClip, Fly, InfJump, FOV, Gravity
+    FIXED BY: Gemini
 ]]
 
 local Players = game:GetService("Players")
@@ -21,63 +21,67 @@ local Config = {
 }
 
 -- --- [ SECCIÓN: JUGADOR LOCAL ] ---
--- Usamos una Section para agrupar todo en el MainTab como pediste
+-- Asumimos que _G.MainTab ya fue creado en tu script principal
 local SectionLocal = _G.MainTab:Section({ 
     Title = "👤 Modificadores de Jugador",
     Icon = "lucide-user-cog"
 })
 
--- 1. VELOCIDAD (WalkSpeed)
+-- 1. VELOCIDAD (WalkSpeed) - CORREGIDO
 SectionLocal:Slider({
     Title = "Velocidad (WalkSpeed)",
+    Desc = "Cambia qué tan rápido caminas",
     Step = 1,
-    Min = 16,
-    Max = 300,
-    Default = 16,
+    Value = {
+        Min = 16,
+        Max = 300,
+        Default = 16,
+    },
     Callback = function(v)
         Config.Speed = v
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.WalkSpeed = v
-        end
     end
 })
 
--- 2. SALTO (JumpPower)
+-- 2. SALTO (JumpPower) - CORREGIDO
 SectionLocal:Slider({
     Title = "Fuerza de Salto",
+    Desc = "Cambia qué tan alto saltas",
     Step = 1,
-    Min = 50,
-    Max = 500,
-    Default = 50,
+    Value = {
+        Min = 50,
+        Max = 500,
+        Default = 50,
+    },
     Callback = function(v)
         Config.Jump = v
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.UseJumpPower = true
-            LocalPlayer.Character.Humanoid.JumpPower = v
-        end
     end
 })
 
--- 3. GRAVEDAD (Gravity)
+-- 3. GRAVEDAD (Gravity) - CORREGIDO
 SectionLocal:Slider({
-    Title = "Gravedad (Low Gravity)",
+    Title = "Gravedad",
+    Desc = "Menor número = Flotas más",
     Step = 5,
-    Min = 0,
-    Max = 196,
-    Default = 196,
+    Value = {
+        Min = 0,
+        Max = 196,
+        Default = 196,
+    },
     Callback = function(v)
         Config.Gravity = v
         workspace.Gravity = v
     end
 })
 
--- 4. FOV (Campo de Visión)
+-- 4. FOV (Campo de Visión) - CORREGIDO
 SectionLocal:Slider({
     Title = "Campo de Visión (FOV)",
     Step = 1,
-    Min = 70,
-    Max = 120,
-    Default = 70,
+    Value = {
+        Min = 70,
+        Max = 120,
+        Default = 70,
+    },
     Callback = function(v)
         Config.Fov = v
         Camera.FieldOfView = v
@@ -92,37 +96,44 @@ SectionLocal:Toggle({
     end
 })
 
--- 6. INFINITE JUMP (Salto Infinito)
+-- 6. INFINITE JUMP (Salto Aéreo)
 SectionLocal:Toggle({
-    Title = "🐇 Infinite Jump (Salto Aéreo)",
+    Title = "🐇 Infinite Jump",
     Callback = function(state)
         Config.InfJump = state
     end
 })
 
+
 -- --- [ LÓGICA INTERNA (LOOPS) ] ---
 
--- Loop Principal (Se ejecuta cada frame)
+-- Loop Principal (Optimizado)
 RunService.Stepped:Connect(function()
     local char = LocalPlayer.Character
     if char then
         local hum = char:FindFirstChild("Humanoid")
-        local root = char:FindFirstChild("HumanoidRootPart")
-
-        -- Mantener Velocidad y Salto (Evita que el juego te lo quite)
+        
+        -- APLICAR VELOCIDAD Y SALTO CONSTANTEMENTE
+        -- (Esto evita que el juego te resetee la velocidad)
         if hum then
             if hum.WalkSpeed ~= Config.Speed then
                 hum.WalkSpeed = Config.Speed
             end
+            
+            -- Aseguramos que use JumpPower y no JumpHeight
+            if hum.UseJumpPower == false then 
+                hum.UseJumpPower = true 
+            end
+            
             if hum.JumpPower ~= Config.Jump then
-                hum.UseJumpPower = true
                 hum.JumpPower = Config.Jump
             end
         end
 
-        -- Lógica NoClip
+        -- LÓGICA NOCLIP
+        -- Solo ejecutamos el loop de partes si el NoClip está ACTIVO (Ahorra recursos)
         if Config.NoClip then
-            for _, part in pairs(char:GetDescendants()) do
+            for _, part in ipairs(char:GetDescendants()) do
                 if part:IsA("BasePart") and part.CanCollide == true then
                     part.CanCollide = false
                 end
@@ -135,13 +146,16 @@ end)
 UserInputService.JumpRequest:Connect(function()
     if Config.InfJump then
         local char = LocalPlayer.Character
-        if char and char:FindFirstChild("Humanoid") then
-            char.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        if char then
+            local hum = char:FindFirstChild("Humanoid")
+            if hum then
+                hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
         end
     end
 end)
 
--- Restaurar Gravedad al cerrar (opcional, por si acaso)
+-- Restaurar Gravedad al salir (Opcional, limpieza)
 game.Players.PlayerRemoving:Connect(function(plr)
     if plr == LocalPlayer then
         workspace.Gravity = 196.2
