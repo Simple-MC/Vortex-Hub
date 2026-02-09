@@ -3,7 +3,7 @@
     LOGIC: Monitor ActiveTsunamis -> Speed 60 -> Walk to Vortex Safe Zones
 ]]
 
-local Section = _G.MainTab:Section({ Title = "Granja & Supervivencia" })
+local Section = _G.AutoFarmTab:Section({ Title = "Granja & Supervivencia" })
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 
