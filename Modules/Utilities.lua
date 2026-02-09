@@ -1,129 +1,111 @@
 --[[
-    MODULE: UTILITIES & SYSTEM
-    FEATURES: VIP Bypass, Instant Prompt, Server Hop, FPS Boost
+    MODULE: UTILITIES
+    FEATURES: Free VIP (Wall Bypass), Instant Prompt, FPS Boost, Server Hop
 ]]
 
-local Section = _G.UtilitiesTab:Section({ Title = "Ventajas de Juego" })
+local Section = _G.UtilitiesTab:Section({ Title = "Ventajas de Mapa" })
 local SystemSection = _G.UtilitiesTab:Section({ Title = "Sistema y Rendimiento" })
+local Player = game.Players.LocalPlayer
 
--- --- [ GAMEPLAY ] ---
-
--- 1. VIP & WALL BYPASS
-local VIPEnabled = false
+-- --- [ 1. FREE VIP & WALL BYPASS ] ---
+_G.VIPEnabled = false
 Section:Toggle({
-    Title = "Desbloquear VIP y Muros",
+    Title = "Desbloquear VIP (Free VIP)",
     Callback = function(state)
-        VIPEnabled = state
+        _G.VIPEnabled = state
         if state then
             task.spawn(function()
-                while VIPEnabled do
+                while _G.VIPEnabled do
                     pcall(function()
-                        local vips = {
-                            "DefaultMap_SharedInstances", "MoneyMap_SharedInstances", 
-                            "MarsMap_SharedInstances", "RadioactiveMap_SharedInstances", 
+                        -- Lista de nombres de carpetas donde suelen estar los muros VIP
+                        local vipFolders = {
+                            "DefaultMap_SharedInstances", 
+                            "MoneyMap_SharedInstances", 
+                            "MarsMap_SharedInstances", 
+                            "RadioactiveMap_SharedInstances", 
                             "ArcadeMap_SharedInstances"
                         }
-                        for _, name in pairs(vips) do
-                            local folder = workspace:FindFirstChild(name)
-                            local walls = folder and folder:FindFirstChild("VIPWalls")
-                            if walls then
-                                for _, part in pairs(walls:GetDescendants()) do
-                                    if part:IsA("BasePart") then part.CanCollide = false end
+                        
+                        for _, folderName in pairs(vipFolders) do
+                            local folder = workspace:FindFirstChild(folderName)
+                            if folder then
+                                -- Buscamos modelos o partes llamadas VIP, Wall, o Mud
+                                for _, obj in pairs(folder:GetDescendants()) do
+                                    if obj:IsA("BasePart") and (obj.Name:find("VIP") or obj.Name:find("Wall") or obj.Name:find("Mud")) then
+                                        obj.CanCollide = false
+                                        obj.Transparency = 0.5 -- Para saber que el hack está activo
+                                    end
                                 end
                             end
                         end
-                        -- Bypass General (Muros molestos)
-                        for _, v in pairs(workspace:GetDescendants()) do
-                            if v.Name == "Mud" or v.Name == "Wall" then v.CanCollide = false end
-                        end
                     end)
-                    task.wait(1)
+                    task.wait(2) -- No necesita ser tan rápido para ahorrar CPU
+                end
+            end)
+        else
+            -- Al apagar, intentamos restaurar colisiones (opcional)
+            pcall(function()
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("BasePart") and (v.Name:find("VIP") or v.Name:find("Wall")) then
+                        v.CanCollide = true
+                        v.Transparency = 0
+                    end
                 end
             end)
         end
     end
 })
 
--- 2. INSTANT PROMPT
-local InstantEnabled = false
+-- --- [ 2. INSTANT PROMPT ] ---
+_G.InstantEnabled = false
 Section:Toggle({
     Title = "Recoger Items Instantáneo",
-    Callback = function(state)
-        InstantEnabled = state
-        if state then
-            task.spawn(function()
-                while InstantEnabled do
-                    for _, prompt in pairs(workspace:GetDescendants()) do
-                        if prompt:IsA("ProximityPrompt") then prompt.HoldDuration = 0 end
+    Callback = function(v) _G.InstantEnabled = v end
+})
+
+task.spawn(function()
+    while true do
+        if _G.InstantEnabled then
+            pcall(function()
+                for _, p in pairs(workspace:GetDescendants()) do
+                    if p:IsA("ProximityPrompt") then
+                        p.HoldDuration = 0
                     end
-                    task.wait(0.5)
                 end
             end)
         end
+        task.wait(1)
     end
-})
+end)
 
--- --- [ SYSTEM TOOLS ] ---
+-- --- [ 3. SYSTEM TOOLS ] ---
 
--- 3. FPS BOOSTER (Modo Papa)
+-- FPS BOOST
 SystemSection:Button({
-    Title = "🔥 FPS Boost (Borrar Texturas)",
+    Title = "🔥 FPS Boost (Modo Papa)",
     Callback = function()
-        local terrain = workspace.Terrain
-        terrain.WaterWaveSize = 0
-        terrain.WaterWaveSpeed = 0
-        terrain.WaterReflectance = 0
-        terrain.WaterTransparency = 0
-        
-        local lighting = game.Lighting
-        lighting.GlobalShadows = false
-        lighting.FogEnd = 9e9
-        lighting.Brightness = 0
-        
-        for _, v in pairs(workspace:GetDescendants()) do
-            if v:IsA("BasePart") and not v:IsA("MeshPart") then
-                v.Material = Enum.Material.Plastic
-                v.Reflectance = 0
-            elseif v:IsA("Decal") or v:IsA("Texture") then
-                v:Destroy()
-            elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
-                v.Enabled = false
+        pcall(function()
+            for _, v in pairs(workspace:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.Material = Enum.Material.Plastic
+                    v.Reflectance = 0
+                elseif v:IsA("Decal") or v:IsA("Texture") then
+                    v:Destroy()
+                elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+                    v.Enabled = false
+                end
             end
-        end
+        end)
     end
 })
 
--- 4. SERVER HOP (Cambio de Servidor)
+-- SERVER HOP
 SystemSection:Button({
-    Title = "🌎 Cambiar de Servidor (Server Hop)",
-    Callback = function()
-        local Http = game:GetService("HttpService")
-        local TPS = game:GetService("TeleportService")
-        local Api = "https://games.roblox.com/v1/games/"
-        local _place = game.PlaceId
-        local _servers = Api.._place.."/servers/Public?sortOrder=Asc&limit=100"
-        
-        local function ListServers(cursor)
-            local Raw = game:HttpGet(_servers .. ((cursor and "&cursor="..cursor) or ""))
-            return Http:JSONDecode(Raw)
-        end
-        
-        local Server, Next; repeat
-            local Servers = ListServers(Next)
-            Server = Servers.data[1]
-            Next = Servers.nextPageCursor
-        until Server
-        
-        TPS:TeleportToPlaceInstance(_place, Server.id, game.Players.LocalPlayer)
-    end
-})
-
--- 5. REJOIN (Reconectar)
-SystemSection:Button({
-    Title = "🔄 Rejoin (Reconectar)",
+    Title = "🌎 Cambiar de Servidor",
     Callback = function()
         local ts = game:GetService("TeleportService")
-        local p = game:Players.LocalPlayer
-        ts:Teleport(game.PlaceId, p)
+        pcall(function()
+            ts:Teleport(game.PlaceId, Player)
+        end)
     end
 })
