@@ -1,6 +1,6 @@
 --[[
-    MODULE: VORTEX AUTO-FARM v11 (PRECISION UPDATE)
-    TARGET: workspace.ActiveBrainrots.Rareza.Rendered.Mob.Root.TakePrompt
+    MODULE: VORTEX AUTO-FARM v12 (PROMPT FIX)
+    LOGIC: Uses 'MaxActivationDistance' check before firing.
 ]]
 
 local Players = game:GetService("Players")
@@ -10,7 +10,7 @@ local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
 
--- --- [ SEGURIDAD: ESPERAR TAB ] ---
+-- --- [ SEGURIDAD TAB ] ---
 local FarmTab = _G.AutoFarmTab
 local t = 0
 while not FarmTab and t < 5 do task.wait(0.1); t=t+0.1; FarmTab = _G.AutoFarmTab end
@@ -20,7 +20,7 @@ if not FarmTab then warn("Falta AutoFarmTab"); return end
 local HomeCF = CFrame.new(136.92, 3.11, -9.24)
 local Collected = 0
 local MaxInv = 4
-local Processed = {} -- Memoria de IDs procesados
+local Processed = {} 
 
 local Config = {
     Enabled = false, Speed = 300, TsunamiRange = 300,
@@ -153,13 +153,9 @@ local function GetTarget()
         if f then for _,rarityFolder in pairs(f:GetChildren()) do
             if table.find(Config.Sel.Brain, rarityFolder.Name) then
                 for _,container in pairs(rarityFolder:GetChildren()) do
-                    -- Si es el contenedor "RenderedBrainrot"
                     if container.Name == "RenderedBrainrot" then
                         for _,mob in pairs(container:GetChildren()) do
-                            -- Verificamos si tiene "Root" y "TakePrompt"
-                            if mob:IsA("Model") and not Processed[mob] then
-                                table.insert(List, mob)
-                            end
+                            if mob:IsA("Model") and not Processed[mob] then table.insert(List, mob) end
                         end
                     elseif container:IsA("Model") and not Processed[container] then
                         table.insert(List, container)
@@ -171,9 +167,14 @@ local function GetTarget()
 
     -- Buscar más cercano
     for _,v in pairs(List) do
-        -- Prioridad: Buscar la parte "Root" primero, si no, la PrimaryPart
-        local p = v:FindFirstChild("Root") or (v:IsA("BasePart") and v) or v:FindFirstChildWhichIsA("BasePart", true)
-        if p then local d = (root.Position - p.Position).Magnitude; if d < sd then sd = d; c = v end end
+        -- Priorizamos encontrar una parte con Prompt, sino la parte base
+        local prompt = v:FindFirstChildWhichIsA("ProximityPrompt", true)
+        local partToCheck = prompt and prompt.Parent or (v:IsA("BasePart") and v) or v:FindFirstChildWhichIsA("BasePart", true)
+        
+        if partToCheck then 
+            local d = (root.Position - partToCheck.Position).Magnitude
+            if d < sd then sd = d; c = v end 
+        end
     end
     return c
 end
@@ -213,22 +214,34 @@ task.spawn(function()
                     else
                         local Target = GetTarget()
                         if Target then
-                            -- Buscamos la parte exacta "Root" donde dijiste que está el prompt
-                            local TargetPart = Target:FindFirstChild("Root") or (Target:IsA("BasePart") and Target) or Target:FindFirstChildWhichIsA("BasePart", true)
-                            
-                            if TargetPart then
+                            -- Buscar el Prompt dentro del Target (recursivo por si está escondido)
+                            local Prompt = Target:FindFirstChildWhichIsA("ProximityPrompt", true)
+                            local MovePart = nil
+
+                            if Prompt then
+                                MovePart = Prompt.Parent -- Nos movemos hacia la parte que tiene el prompt
+                            else
+                                -- Si no hay prompt (tickets/money), vamos a la parte física
+                                MovePart = Target:IsA("BasePart") and Target or Target:FindFirstChildWhichIsA("BasePart", true)
+                            end
+
+                            if MovePart then
                                 -- Moverse
-                                if (root.Position - TargetPart.Position).Magnitude > 3 then Tween(TargetPart.CFrame) end
+                                if (root.Position - MovePart.Position).Magnitude > 3 then 
+                                    Tween(MovePart.CFrame) 
+                                end
                                 
-                                -- Interactuar (LÓGICA PRECISA)
-                                -- Buscamos "TakePrompt" dentro de "Root" específicamente
-                                local Prompt = TargetPart:FindFirstChild("TakePrompt") or Target:FindFirstChildWhichIsA("ProximityPrompt", true)
-                                
-                                if Prompt then 
-                                    fireproximityprompt(Prompt)
-                                    Processed[Target] = true
-                                    Collected = Collected + 1
-                                    task.wait(0.5) 
+                                -- INTERACCIÓN (TU LÓGICA)
+                                if Prompt then
+                                    local dist = (root.Position - MovePart.Position).Magnitude
+                                    
+                                    -- Usamos MaxActivationDistance para disparar solo cuando sea válido
+                                    if dist <= Prompt.MaxActivationDistance then
+                                        fireproximityprompt(Prompt)
+                                        Processed[Target] = true
+                                        Collected = Collected + 1
+                                        task.wait(0.5) 
+                                    end
                                 end
                             end
                         end
