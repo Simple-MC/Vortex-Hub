@@ -1,27 +1,27 @@
 --[[
-    MODULE: VORTEX SURVIVAL AUTO-FARM (ULTIMATE EDITION)
-    FEATURES:
-    1. Smart NoClip (Prevents getting stuck/spinning)
-    2. Absolute Priority: Tsunami > Closest Item
-    3. Omniscient Scanner: Detects Tickets, Gold, Brainrots & LuckyBlocks
+    MODULE: VORTEX SPEED-FARM (TWEEN EDITION)
+    MODE: Fast Glide (No Walking, No Instant TP)
+    SPEED: 350 Studs/Second (Super Fast)
 ]]
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
 
--- --- [ ESPERAR A LA TAB (Seguridad) ] ---
+-- --- [ SEGURIDAD DE TAB ] ---
 local FarmTab = _G.AutoFarmTab
 local timeout = 0
-while not FarmTab and timeout < 5 do
-    task.wait(0.1); timeout = timeout + 0.1; FarmTab = _G.AutoFarmTab
-end
+while not FarmTab and timeout < 5 do task.wait(0.1); timeout = timeout+0.1; FarmTab = _G.AutoFarmTab end
+if not FarmTab then warn("❌ Falta AutoFarmTab"); return end
 
-if not FarmTab then
-    warn("❌ AutoFarmTab no encontrada. Ejecuta Main.lua primero.")
-    return
-end
+-- --- [ CONFIGURACIÓN ] ---
+local FarmConfig = {
+    Enabled = false,
+    Speed = 350, -- Velocidad del deslizamiento (16 es caminar, 350 es un cohete)
+    Targets = { Tickets = false, Consoles = false, Money = false, LuckyBlocks = false, Brainrots = false }
+}
 
 -- --- [ ZONAS SEGURAS ] ---
 local SafeZones = {
@@ -36,152 +36,142 @@ local SafeZones = {
     {cf = CFrame.new(2598.85, -6.38, 6.92)},
 }
 
--- --- [ CONFIGURACIÓN ] ---
-local FarmConfig = {
-    Enabled = false,
-    Targets = {
-        Tickets = false,
-        Consoles = false,
-        Money = false,
-        LuckyBlocks = false,
-        Brainrots = false
-    }
-}
-
--- --- [ INTERFAZ UI ] ---
-local SectionFarm = FarmTab:Section({ Title = "🌊 Auto-Farm & Survival" })
+-- --- [ UI INTERFACE ] ---
+local SectionFarm = FarmTab:Section({ Title = "⚡ Speed Auto-Farm" })
 
 SectionFarm:Toggle({
-    Title = "🔥 ACTIVAR FARM MAESTRO",
-    Desc = "Prioriza Tsunami > Items más cercanos",
-    Callback = function(s) FarmConfig.Enabled = s end
-})
-
-SectionFarm:Toggle({ Title = "Recoger Tickets", Callback = function(s) FarmConfig.Targets.Tickets = s end })
-SectionFarm:Toggle({ Title = "Recoger Consolas", Callback = function(s) FarmConfig.Targets.Consoles = s end })
-SectionFarm:Toggle({ Title = "Recoger Dinero", Callback = function(s) FarmConfig.Targets.Money = s end })
-SectionFarm:Toggle({ Title = "Lucky Blocks (Auto-E)", Callback = function(s) FarmConfig.Targets.LuckyBlocks = s end })
-SectionFarm:Toggle({ Title = "Recoger Brainrots", Callback = function(s) FarmConfig.Targets.Brainrots = s end })
-
--- --- [ FUNCIONES LÓGICAS ] ---
-
--- Activa NoClip para evitar trabarse en el piso/paredes
-local function ActivateNoClip()
-    local char = LocalPlayer.Character
-    if char then
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") and part.CanCollide == true then
-                -- Mantenemos el Torso/RootPart con colisión a veces para no caer al vacío infinito
-                -- Pero si se traba mucho, mejor quitar todo.
-                part.CanCollide = false 
+    Title = "🔥 ACTIVAR SPEED FARM",
+    Desc = "Prioridad: Tsunami > Items (Movimiento Rápido)",
+    Callback = function(s) 
+        FarmConfig.Enabled = s 
+        if not s then
+            -- Cancelar movimiento si se apaga
+            local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if root then 
+                for _, t in pairs(TweenService:GetTweens()) do 
+                    if t.Instance == root then t:Cancel() end 
+                end
             end
         end
     end
+})
+
+SectionFarm:Toggle({ Title = "Tickets", Callback = function(s) FarmConfig.Targets.Tickets = s end })
+SectionFarm:Toggle({ Title = "Consolas", Callback = function(s) FarmConfig.Targets.Consoles = s end })
+SectionFarm:Toggle({ Title = "Dinero", Callback = function(s) FarmConfig.Targets.Money = s end })
+SectionFarm:Toggle({ Title = "Lucky Blocks", Callback = function(s) FarmConfig.Targets.LuckyBlocks = s end })
+SectionFarm:Toggle({ Title = "Brainrots", Callback = function(s) FarmConfig.Targets.Brainrots = s end })
+
+-- --- [ MOTOR DE MOVIMIENTO (TWEEN) ] ---
+
+-- Variable para guardar el Tween actual y poder cancelarlo si viene un Tsunami
+local CurrentTween = nil
+
+local function MoverRapido(DestinoCFrame)
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    -- Calcular distancia para mantener velocidad constante
+    local Distancia = (root.Position - DestinoCFrame.Position).Magnitude
+    local Tiempo = Distancia / FarmConfig.Speed -- Fórmula de Física: T = D / V
+    
+    -- Crear la información del Tween (Lineal para que sea constante)
+    local Info = TweenInfo.new(Tiempo, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+    
+    -- Si ya nos estamos moviendo, cancelamos el anterior para no buguearnos
+    if CurrentTween then CurrentTween:Cancel() end
+    
+    -- Crear y reproducir el nuevo movimiento
+    CurrentTween = TweenService:Create(root, Info, {CFrame = DestinoCFrame})
+    CurrentTween:Play()
+    
+    -- Esperar a que llegue (o se cancele externamente)
+    CurrentTween.Completed:Wait()
+    CurrentTween = nil
+    
+    -- Al llegar, anulamos la velocidad para no salir volando
+    root.Velocity = Vector3.new(0,0,0)
 end
 
+-- --- [ LÓGICA DE ESCANEO ] ---
+
 local function IsTsunamiActive()
-    local folder = workspace:FindFirstChild("ActiveTsunamis")
-    return folder and #folder:GetChildren() > 0
+    local f = workspace:FindFirstChild("ActiveTsunamis")
+    return f and #f:GetChildren() > 0
 end
 
 local function GetClosestSafeZone()
-    local closestPos = nil
-    local shortestDist = math.huge
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    
+    local closest, shortDist = nil, math.huge
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if root then
-        for _, zoneData in pairs(SafeZones) do
-            local safePos = zoneData.cf.Position 
-            local dist = (root.Position - safePos).Magnitude
-            if dist < shortestDist then
-                shortestDist = dist
-                closestPos = safePos
+        for _, z in pairs(SafeZones) do
+            local dist = (root.Position - z.cf.Position).Magnitude
+            if dist < shortDist then shortDist = dist; closest = z.cf end
+        end
+    end
+    return closest
+end
+
+local function GetBestTarget()
+    local closest, shortDist = nil, math.huge
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not root then return nil end
+
+    local Candidates = {}
+    
+    -- Escaneo agresivo de todas las carpetas
+    if FarmConfig.Targets.Tickets then 
+        local f = workspace:FindFirstChild("ArcadeEventTickets")
+        if f then for _,v in pairs(f:GetChildren()) do table.insert(Candidates, v) end end
+    end
+    if FarmConfig.Targets.Consoles then 
+        local f = workspace:FindFirstChild("ArcadeEventConsoles")
+        if f then for _,v in pairs(f:GetChildren()) do table.insert(Candidates, v) end end
+    end
+    if FarmConfig.Targets.Money then 
+        local f = workspace:FindFirstChild("MoneyEventParts")
+        if f then for _,v in pairs(f:GetChildren()) do table.insert(Candidates, v) end end
+    end
+    if FarmConfig.Targets.LuckyBlocks then 
+        local f = workspace:FindFirstChild("ActiveLuckyBlocks")
+        if f then for _,v in pairs(f:GetDescendants()) do if v:IsA("Model") then table.insert(Candidates, v) end end end
+    end
+    if FarmConfig.Targets.Brainrots then
+        local f = workspace:FindFirstChild("ActiveBrainrots")
+        if f then
+            for _, r in pairs(f:GetChildren()) do
+                for _, m in pairs(r:GetChildren()) do
+                    if m.Name == "RenderedBrainrot" then
+                        for _, real in pairs(m:GetChildren()) do if real:IsA("Model") then table.insert(Candidates, real) end end
+                    elseif m:IsA("Model") then table.insert(Candidates, m) end
+                end
             end
         end
     end
-    return closestPos
-end
 
--- EL CEREBRO DEL FARM: Busca TODO y devuelve LO MÁS CERCANO
-local function GetBestTarget()
-    local closest = nil
-    local shortestDist = math.huge
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root then return nil end
-
-    local ObjectsToCheck = {}
-
-    -- 1. Agregar Tickets
-    if FarmConfig.Targets.Tickets then 
-        local f = workspace:FindFirstChild("ArcadeEventTickets")
-        if f then for _,v in pairs(f:GetChildren()) do table.insert(ObjectsToCheck, v) end end
-    end
-    
-    -- 2. Agregar Consolas
-    if FarmConfig.Targets.Consoles then 
-        local f = workspace:FindFirstChild("ArcadeEventConsoles")
-        if f then for _,v in pairs(f:GetChildren()) do table.insert(ObjectsToCheck, v) end end
-    end
-    
-    -- 3. Agregar Dinero
-    if FarmConfig.Targets.Money then 
-        local f = workspace:FindFirstChild("MoneyEventParts")
-        if f then for _,v in pairs(f:GetChildren()) do table.insert(ObjectsToCheck, v) end end
-    end
-
-    -- 4. Agregar Lucky Blocks (Recursivo por si usan carpetas)
-    if FarmConfig.Targets.LuckyBlocks then 
-        local f = workspace:FindFirstChild("ActiveLuckyBlocks")
-        if f then 
-            for _,v in pairs(f:GetDescendants()) do 
-                if v:IsA("Model") then table.insert(ObjectsToCheck, v) end 
-            end 
-        end
-    end
-
-    -- 5. Agregar Brainrots (Buscando dentro de carpetas de rareza)
-    if FarmConfig.Targets.Brainrots then 
-        local f = workspace:FindFirstChild("ActiveBrainrots")
-        if f then 
-            for _, rareza in pairs(f:GetChildren()) do
-                -- Buscar dentro de la carpeta de rareza
-                for _, mob in pairs(rareza:GetChildren()) do
-                    -- Si hay contenedor 'RenderedBrainrot', entrar ahí
-                    if mob.Name == "RenderedBrainrot" then
-                        for _, realMob in pairs(mob:GetChildren()) do
-                            if realMob:IsA("Model") then table.insert(ObjectsToCheck, realMob) end
-                        end
-                    elseif mob:IsA("Model") then
-                        table.insert(ObjectsToCheck, mob)
-                    end
-                end
-            end 
-        end
-    end
-
-    -- COMPARAR DISTANCIAS DE TODO LO ENCONTRADO
-    for _, item in pairs(ObjectsToCheck) do
+    -- Matemáticas para encontrar el más cercano
+    for _, item in pairs(Candidates) do
         local part = item:IsA("BasePart") and item or item:FindFirstChildWhichIsA("BasePart", true)
         if part then
             local dist = (root.Position - part.Position).Magnitude
-            if dist < shortestDist then
-                shortestDist = dist
-                closest = item
-            end
+            if dist < shortDist then shortDist = dist; closest = item end
         end
     end
-
     return closest
 end
 
 -- --- [ MOTOR PRINCIPAL ] ---
 
--- Loop NoClip constante (Para que no te trabes NUNCA)
+-- Anti-Stuck Loop (NoClip Permanente mientras farmeas)
 RunService.Stepped:Connect(function()
-    if FarmConfig.Enabled then
-        ActivateNoClip()
+    if FarmConfig.Enabled and LocalPlayer.Character then
+        for _, p in pairs(LocalPlayer.Character:GetDescendants()) do
+            if p:IsA("BasePart") and p.CanCollide then p.CanCollide = false end
+        end
+        -- Evitar caer al vacío si el juego no tiene piso
+        local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if root then root.Velocity = Vector3.new(0,0,0) end 
     end
 end)
 
@@ -191,60 +181,54 @@ task.spawn(function()
             local char = LocalPlayer.Character
             local hum = char and char:FindFirstChild("Humanoid")
             local root = char and char:FindFirstChild("HumanoidRootPart")
-            
-            if hum and root and hum.Health > 0 then
+
+            if root and hum and hum.Health > 0 then
                 
-                -- ==========================================
-                -- [ PRIORIDAD 1: ANTI-TSUNAMI (PAUSA TODO LO DEMÁS) ]
-                -- ==========================================
+                -- [ PRIORIDAD 1: TSUNAMI (Modo Pánico) ]
                 if IsTsunamiActive() then
-                    local safePos = GetClosestSafeZone()
-                    if safePos then
-                        -- Si estamos lejos, corremos
-                        if (root.Position - safePos).Magnitude > 5 then
-                            hum:MoveTo(safePos)
-                            
-                            -- Feedback visual
+                    local SafeSpot = GetClosestSafeZone()
+                    if SafeSpot then
+                        -- Si estamos lejos, volamos hacia allá
+                        if (root.Position - SafeSpot.Position).Magnitude > 5 then
+                            -- AVISO VISUAL
                             if not workspace:FindFirstChild("VortexAlert") then
-                                local hint = Instance.new("Hint", workspace)
-                                hint.Name = "VortexAlert"; hint.Text = "🌊 ¡TSUNAMI! PAUSANDO FARMEO -> ZONA SEGURA"
-                                Debris:AddItem(hint, 2)
+                                local h = Instance.new("Hint", workspace); h.Name="VortexAlert"; h.Text="🌊 TSUNAMI - VOLANDO A ZONA SEGURA 🌊"; Debris:AddItem(h, 2)
                             end
+                            
+                            -- ¡VUELO RÁPIDO A ZONA SEGURA!
+                            MoverRapido(SafeSpot) 
                         else
-                            -- Si ya llegamos, nos quedamos quietos
-                            hum:MoveTo(root.Position) 
+                            -- Si ya llegamos, cancelamos cualquier movimiento residual
+                            if CurrentTween then CurrentTween:Cancel() end
+                            root.CFrame = SafeSpot -- Anclarse ahí
                         end
                     end
-                
-                -- ==========================================
-                -- [ PRIORIDAD 2: FARMEO (SOLO SI NO HAY TSUNAMI) ]
-                -- ==========================================
+
+                -- [ PRIORIDAD 2: FARMEO (Solo si es seguro) ]
                 else
-                    local targetModel = GetBestTarget()
-                    
-                    if targetModel then
-                        local targetPart = targetModel:IsA("BasePart") and targetModel or targetModel:FindFirstChildWhichIsA("BasePart", true)
-                        
-                        if targetPart then
-                            hum:MoveTo(targetPart.Position)
+                    local Target = GetBestTarget()
+                    if Target then
+                        local Part = Target:IsA("BasePart") and Target or Target:FindFirstChildWhichIsA("BasePart", true)
+                        if Part then
+                            -- Calcular si vale la pena moverse
+                            if (root.Position - Part.Position).Magnitude > 4 then
+                                MoverRapido(Part.CFrame)
+                            end
                             
-                            local dist = (root.Position - targetPart.Position).Magnitude
-                            
-                            -- INTERACCIÓN AUTOMÁTICA
-                            if dist < 10 then
-                                -- 1. Intentar ProximityPrompt (Lucky Blocks / Brainrots interactuables)
-                                local prompt = targetModel:FindFirstChildWhichIsA("ProximityPrompt", true)
-                                if prompt then 
-                                    fireproximityprompt(prompt) 
-                                end
-                                
-                                -- 2. Si es un Ticket o Dinero, caminar encima basta (MoveTo lo hace)
+                            -- Interacción al llegar
+                            local Prompt = Target:FindFirstChildWhichIsA("ProximityPrompt", true)
+                            if Prompt then 
+                                fireproximityprompt(Prompt)
+                                task.wait(0.1) -- Pequeña pausa para que procese el click
                             end
                         end
                     end
                 end
             end
+        else
+            -- Si se apaga, asegúrate de cancelar el vuelo
+            if CurrentTween then CurrentTween:Cancel(); CurrentTween = nil end
         end
-        task.wait(0.1) -- Velocidad de actualización
+        task.wait() -- Sin espera larga para reacción instantánea
     end
 end)
