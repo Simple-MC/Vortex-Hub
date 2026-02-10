@@ -30,7 +30,8 @@ LoadModule("Combat")     -- God Mode y Anti-Muros
 LoadModule("Esp")        -- El ESP
 LoadModule("Esp2")        -- El ESP avanzado (Brainrots y LuckyBlocks)
 LoadModule("Utilities")  -- VIP y Prompts
-LoadModule("AutoFarm") 
+LoadModule("AutoFarm")
+LoadModule("AutoCollect") 
 
 WindUI:Notify({
     Title = "VORTEX HUB",
