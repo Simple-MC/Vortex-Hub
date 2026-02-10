@@ -1,9 +1,9 @@
 --[[
-    MODULE: VORTEX AUTO-FARM v16 (TURBO EXPLOIT)
-    LOGIC:
-    1. Distance Check (>10 studs = Tween)
-    2. Proximity Hack (HoldDuration = 0)
-    3. Signal Burst (Fire 10x)
+    MODULE: VORTEX AUTO-FARM v17 (CLOSE RANGE FIX)
+    FIXES:
+    1. Fly distance reduced to 2 studs (Get closer!)
+    2. Disable RequiresLineOfSight (Interact through walls)
+    3. Uses Prompt.MaxActivationDistance logic
 ]]
 
 local Players = game:GetService("Players")
@@ -20,7 +20,6 @@ while not FarmTab and t < 5 do task.wait(0.1); t=t+0.1; FarmTab = _G.AutoFarmTab
 if not FarmTab then warn("Falta AutoFarmTab"); return end
 
 -- --- [ CONFIGURACIÓN ] ---
--- Tu base exacta (Hardcoded)
 local HomeCF = CFrame.new(136.925751, 3.11180735, -9.24574852, 0.00662881136, 0, -0.999978006, 0, 1, 0, 0.999978006, 0, 0.00662881136)
 local Collected = 0
 local MaxInv = 4
@@ -57,7 +56,7 @@ local function GetNames(folder)
 end
 
 -- --- [ UI INTERFACE ] ---
-local Section = FarmTab:Section({ Title = "⚡ TURBO EXPLOIT FARM" })
+local Section = FarmTab:Section({ Title = "⚡ TURBO FARM v17" })
 
 Section:Toggle({ Title = "🔥 ACTIVAR FARM", Callback = function(s) Config.Enabled = s; if s then Collected = 0 end end })
 
@@ -102,7 +101,11 @@ local function FlyTo(TargetCF)
     
     local t = 0
     while t < Time do
-        if not GetRoot() or not Config.Enabled then if CurTween then CurTween:Cancel() end return end
+        -- Si se apaga o perdemos el root, paramos
+        if not GetRoot() or not Config.Enabled then 
+            if CurTween then CurTween:Cancel() end 
+            return 
+        end
         task.wait(0.1); t=t+0.1
     end
     CurTween = nil; if GetRoot() then root.Velocity = Vector3.zero end
@@ -171,6 +174,7 @@ local function GetTarget()
     end
 
     for _,v in pairs(List) do
+        -- Priorizamos el prompt para medir distancia hacia ÉL, no hacia el modelo
         local prompt = v:FindFirstChildWhichIsA("ProximityPrompt", true)
         local partToCheck = prompt and prompt.Parent or (v:IsA("BasePart") and v) or v:FindFirstChildWhichIsA("BasePart", true)
         
@@ -182,7 +186,7 @@ local function GetTarget()
     return c
 end
 
--- --- [ LOOP PRINCIPAL (OPTIMIZADO) ] ---
+-- --- [ LOOP PRINCIPAL ] ---
 
 RunService.Stepped:Connect(function()
     if Config.Enabled then
@@ -208,7 +212,7 @@ task.spawn(function()
                         local Safe = GetSafe()
                         if Safe and (root.Position - Safe.Position).Magnitude > 5 then FlyTo(Safe) end
                     
-                    -- 2. Inventario Lleno (Ir a Casa Fija)
+                    -- 2. Inventario Lleno
                     elseif Collected >= MaxInv then
                         if (root.Position - HomeCF.Position).Magnitude > 5 then FlyTo(HomeCF) 
                         else Collected=0; Processed={}; task.wait(1.5) end
@@ -224,32 +228,31 @@ task.spawn(function()
                             else MovePart = Target:IsA("BasePart") and Target or Target:FindFirstChildWhichIsA("BasePart", true) end
 
                             if MovePart then
-                                -- A) APROXIMACIÓN (Si distancia > 10)
+                                -- A) MOVIMIENTO: Volar si estamos a más de 2 studs (Antes era 10, ahora nos pegamos)
                                 local dist = (root.Position - MovePart.Position).Magnitude
-                                if dist > 10 then 
+                                if dist > 2 then 
                                     FlyTo(MovePart.CFrame) 
                                 end
                                 
-                                -- B) EJECUCIÓN (Si distancia <= 10)
+                                -- B) INTERACCIÓN: Verificar distancia real
                                 if Prompt then
                                     local distActual = (root.Position - MovePart.Position).Magnitude
                                     
-                                    -- Rango de seguridad de 12 studs para no fallar
-                                    if distActual <= 12 then
+                                    -- Usamos el MaxActivationDistance del prompt + un pequeño margen
+                                    if distActual <= (Prompt.MaxActivationDistance + 2) then
                                         
-                                        -- 1. Hack de Tiempo (Instantáneo)
+                                        -- HACK: Permitir interactuar a través de paredes
+                                        Prompt.RequiresLineOfSight = false 
                                         Prompt.HoldDuration = 0 
                                         
-                                        -- 2. Ráfaga de Señales (Fuerza Bruta)
+                                        -- TURBO FIRE
                                         for i = 1, 10 do
                                             fireproximityprompt(Prompt)
                                         end
                                         
-                                        -- 3. Registrar
                                         Processed[Target] = true
                                         Collected = Collected + 1
                                         
-                                        -- Pausa mínima técnica
                                         task.wait(0.1) 
                                     end
                                 end
@@ -263,6 +266,6 @@ task.spawn(function()
             end
         end)
         if not success then task.wait(1) end
-        task.wait(0.05) -- 20 ticks por segundo para reacción rápida
+        task.wait(0.05)
     end
 end)
