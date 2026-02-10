@@ -1,6 +1,9 @@
 --[[
-    MODULE: VORTEX AUTO-FARM v12 (PROMPT FIX)
-    LOGIC: Uses 'MaxActivationDistance' check before firing.
+    MODULE: VORTEX AUTO-FARM v14 (TURBO HARVEST)
+    LOGIC: 
+    1. Force HoldDuration = 0 (Instant Pickup)
+    2. Burst Fire x10 (Server Force)
+    3. Tsunami Nuke (God Mode)
 ]]
 
 local Players = game:GetService("Players")
@@ -23,7 +26,11 @@ local MaxInv = 4
 local Processed = {} 
 
 local Config = {
-    Enabled = false, Speed = 300, TsunamiRange = 300,
+    Enabled = false,
+    Method = "Tween", 
+    Speed = 300,
+    RemoveTsunami = false, 
+    TsunamiRange = 300,
     Targets = { Tickets = false, Consoles = false, Money = false, LuckyBlocks = false, Brainrots = false },
     Sel = { Lucky = {}, Brain = {} }
 }
@@ -51,21 +58,25 @@ local function GetNames(folder)
 end
 
 -- --- [ UI INTERFACE ] ---
-local Section = FarmTab:Section({ Title = "🌊 Auto-Farm Precision" })
+local Section = FarmTab:Section({ Title = "⚡ TURBO HARVEST FARM" })
 
-Section:Toggle({ Title = "🔥 ACTIVAR", Callback = function(s) Config.Enabled = s; if s then Collected = 0 end end })
+Section:Toggle({ Title = "🔥 ACTIVAR FARM", Callback = function(s) Config.Enabled = s; if s then Collected = 0 end end })
 
-Section:Slider({
-    Title = "Rango Tsunami", Step = 10, Value = { Min = 50, Max = 1000, Default = 300 },
-    Callback = function(v) Config.TsunamiRange = v end
+Section:Toggle({ 
+    Title = "🌊 ELIMINAR TSUNAMI (God Mode)", 
+    Desc = "Borra el agua visualmente para farmear siempre.",
+    Callback = function(s) Config.RemoveTsunami = s end 
 })
 
-Section:Button({ Title = "🏠 Fijar Casa", Callback = function() 
-    if LocalPlayer.Character then HomeCF = LocalPlayer.Character.HumanoidRootPart.CFrame end 
-end })
+Section:Dropdown({
+    Title = "Modo de Movimiento", Values = {"Tween", "Instant"}, Default = "Tween",
+    Callback = function(v) Config.Method = v end
+})
 
+Section:Button({ Title = "🏠 Fijar Casa", Callback = function() if LocalPlayer.Character then HomeCF = LocalPlayer.Character.HumanoidRootPart.CFrame end end })
 Section:Button({ Title = "🗑️ Resetear Memoria", Callback = function() Processed = {}; Collected = 0 end })
 
+-- TARGETS
 Section:Toggle({ Title = "Tickets", Callback = function(s) Config.Targets.Tickets = s end })
 Section:Toggle({ Title = "Consolas", Callback = function(s) Config.Targets.Consoles = s end })
 Section:Toggle({ Title = "Dinero", Callback = function(s) Config.Targets.Money = s end })
@@ -84,32 +95,46 @@ local function GetRoot()
 end
 
 local CurTween = nil
-local function Tween(TargetCF)
+
+local function MoveToTarget(TargetCF)
     local root = GetRoot()
     if not root then return end
-    
-    local Dist = (root.Position - TargetCF.Position).Magnitude
-    local Time = Dist / Config.Speed
-    
-    if CurTween then CurTween:Cancel() end
-    CurTween = TweenService:Create(root, TweenInfo.new(Time, Enum.EasingStyle.Linear), {CFrame = TargetCF})
-    CurTween:Play()
-    
-    local t = 0
-    while t < Time do
-        if not GetRoot() or not Config.Enabled then if CurTween then CurTween:Cancel() end return end
-        task.wait(0.1); t=t+0.1
+
+    if Config.Method == "Instant" then
+        root.CFrame = TargetCF
+        root.Velocity = Vector3.zero
+        task.wait(0.05) 
+    else
+        local Dist = (root.Position - TargetCF.Position).Magnitude
+        local Time = Dist / Config.Speed
+        
+        if CurTween then CurTween:Cancel() end
+        CurTween = TweenService:Create(root, TweenInfo.new(Time, Enum.EasingStyle.Linear), {CFrame = TargetCF})
+        CurTween:Play()
+        
+        local t = 0
+        while t < Time do
+            if not GetRoot() or not Config.Enabled then if CurTween then CurTween:Cancel() end return end
+            task.wait(0.1); t=t+0.1
+        end
+        CurTween = nil; if GetRoot() then root.Velocity = Vector3.zero end
     end
-    CurTween = nil; if GetRoot() then root.Velocity = Vector3.zero end
+end
+
+local function NukeTsunami()
+    local f = workspace:FindFirstChild("ActiveTsunamis")
+    if f then f:ClearAllChildren() end
 end
 
 local function CheckTsunami()
+    if Config.RemoveTsunami then NukeTsunami(); return false end
+
     local f = workspace:FindFirstChild("ActiveTsunamis")
     local root = GetRoot()
     if f and root then
         for _,w in pairs(f:GetChildren()) do
             local p = w:IsA("BasePart") and w or w:FindFirstChildWhichIsA("BasePart", true)
-            if p and (root.Position - p.Position).Magnitude < Config.TsunamiRange then return true end
+            if p and (root.Position - p.Position).Magnitude < 300 then return true end
         end
     end
     return false
@@ -132,7 +157,7 @@ local function GetTarget()
     if not root then return nil end
     local List = {}
 
-    -- Tickets/Money
+    -- Recolección normal
     if Config.Targets.Tickets then local f=workspace:FindFirstChild("ArcadeEventTickets") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
     if Config.Targets.Consoles then local f=workspace:FindFirstChild("ArcadeEventConsoles") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
     if Config.Targets.Money then local f=workspace:FindFirstChild("MoneyEventParts") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
@@ -147,7 +172,7 @@ local function GetTarget()
         end end
     end
 
-    -- Brainrots (LÓGICA ACTUALIZADA)
+    -- Brainrots
     if Config.Targets.Brainrots then
         local f=workspace:FindFirstChild("ActiveBrainrots")
         if f then for _,rarityFolder in pairs(f:GetChildren()) do
@@ -165,9 +190,7 @@ local function GetTarget()
         end end
     end
 
-    -- Buscar más cercano
     for _,v in pairs(List) do
-        -- Priorizamos encontrar una parte con Prompt, sino la parte base
         local prompt = v:FindFirstChildWhichIsA("ProximityPrompt", true)
         local partToCheck = prompt and prompt.Parent or (v:IsA("BasePart") and v) or v:FindFirstChildWhichIsA("BasePart", true)
         
@@ -179,7 +202,7 @@ local function GetTarget()
     return c
 end
 
--- --- [ LOOP PRINCIPAL ] ---
+-- --- [ LOOP PRINCIPAL (TURBO) ] ---
 
 RunService.Stepped:Connect(function()
     if Config.Enabled then
@@ -200,47 +223,56 @@ task.spawn(function()
                 
                 if root and hum and hum.Health > 0 then
                     
-                    -- 1. Tsunami Check
                     if CheckTsunami() then
                         local Safe = GetSafe()
-                        if Safe and (root.Position - Safe.Position).Magnitude > 5 then Tween(Safe) end
+                        if Safe and (root.Position - Safe.Position).Magnitude > 5 then MoveToTarget(Safe) end
                     
-                    -- 2. Inventory Check
                     elseif Collected >= MaxInv then
-                        if (root.Position - HomeCF.Position).Magnitude > 5 then Tween(HomeCF) 
-                        else Collected=0; Processed={}; task.wait(1.5) end
+                        if (root.Position - HomeCF.Position).Magnitude > 5 then MoveToTarget(HomeCF) 
+                        else Collected=0; Processed={}; task.wait(1) end
                     
-                    -- 3. Farming
                     else
                         local Target = GetTarget()
                         if Target then
-                            -- Buscar el Prompt dentro del Target (recursivo por si está escondido)
                             local Prompt = Target:FindFirstChildWhichIsA("ProximityPrompt", true)
                             local MovePart = nil
 
                             if Prompt then
-                                MovePart = Prompt.Parent -- Nos movemos hacia la parte que tiene el prompt
+                                MovePart = Prompt.Parent 
                             else
-                                -- Si no hay prompt (tickets/money), vamos a la parte física
                                 MovePart = Target:IsA("BasePart") and Target or Target:FindFirstChildWhichIsA("BasePart", true)
                             end
 
                             if MovePart then
-                                -- Moverse
-                                if (root.Position - MovePart.Position).Magnitude > 3 then 
-                                    Tween(MovePart.CFrame) 
+                                -- Moverse si estamos lejos (> 10 Studs)
+                                local dist = (root.Position - MovePart.Position).Magnitude
+                                if dist > 10 then 
+                                    MoveToTarget(MovePart.CFrame) 
                                 end
                                 
-                                -- INTERACCIÓN (TU LÓGICA)
+                                -- INTERACCIÓN TURBO
                                 if Prompt then
-                                    local dist = (root.Position - MovePart.Position).Magnitude
+                                    local distActual = (root.Position - MovePart.Position).Magnitude
                                     
-                                    -- Usamos MaxActivationDistance para disparar solo cuando sea válido
-                                    if dist <= Prompt.MaxActivationDistance then
-                                        fireproximityprompt(Prompt)
+                                    -- Si estamos a 10 studs o menos... ¡ATAQUE!
+                                    if distActual <= 10 then
+                                        
+                                        -- 1. Eliminamos el tiempo de espera (INSTANTÁNEO)
+                                        Prompt.HoldDuration = 0 
+                                        
+                                        -- 2. Ráfaga de disparos (SPAM FIRE)
+                                        -- Disparamos 10 veces para asegurar que el servidor lo recibe
+                                        for i = 1, 10 do
+                                            fireproximityprompt(Prompt)
+                                            -- No ponemos wait() aquí para que sea instantáneo
+                                        end
+                                        
+                                        -- 3. Marcar como recogido
                                         Processed[Target] = true
                                         Collected = Collected + 1
-                                        task.wait(0.5) 
+                                        
+                                        -- Pausa mínima para no crashear el cliente
+                                        task.wait(0.1) 
                                     end
                                 end
                             end
@@ -253,6 +285,6 @@ task.spawn(function()
             end
         end)
         if not success then task.wait(1) end
-        task.wait(0.1)
+        task.wait(0.05) -- Bucle más rápido (20 ticks por segundo)
     end
 end)
