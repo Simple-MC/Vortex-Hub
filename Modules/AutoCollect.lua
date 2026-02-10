@@ -1,11 +1,3 @@
---[[
-    MODULE: VORTEX AUTO-FARM v8 (FINAL FIX)
-    CHANGES:
-    1. Hardcoded Home CFrame (Your specific Safe Zone).
-    2. Tsunami Range Check (Farms until the wave is close).
-    3. Auto-Deposit Logic (Goes home when full).
-]]
-
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -13,276 +5,175 @@ local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
 
--- --- [ SEGURIDAD DE TAB ] ---
 local FarmTab = _G.AutoFarmTab
-local timeout = 0
-while not FarmTab and timeout < 5 do task.wait(0.1); timeout = timeout+0.1; FarmTab = _G.AutoFarmTab end
-if not FarmTab then warn("❌ Falta AutoFarmTab"); return end
+local t = 0
+while not FarmTab and t < 5 do task.wait(0.1); t=t+0.1; FarmTab = _G.AutoFarmTab end
+if not FarmTab then warn("Falta AutoFarmTab"); return end
 
--- --- [ TU BASE (Zona Segura Personalizada) ] ---
--- Este es el CFrame exacto que me diste:
-local RealBaseCFrame = CFrame.new(136.925751, 3.11180735, -9.24574852, 0.00662881136, 0, -0.999978006, 0, 1, 0, 0.999978006, 0, 0.00662881136)
-
--- --- [ VARIABLES DE ESTADO ] ---
-local CollectedCount = 0
-local MaxInventory = 4 
-local ProcessedIDs = {} 
-
--- --- [ CONFIGURACIÓN ] ---
-local FarmConfig = {
-    Enabled = false,
-    Speed = 300,
-    TsunamiRange = 300, -- Distancia a la que el script se asusta (15 es muy poco, sugiero 150-300)
-    Targets = { Tickets = false, Consoles = false, Money = false, LuckyBlocks = false, Brainrots = false },
-    Selection = { LuckyBlocks = {}, Brainrots = {} }
+-- Zonas Seguras (Tu CFrame es el primero)
+local SafeZones = {
+    CFrame.new(136.92, 3.11, -9.24), -- Tu base/inicio
+    CFrame.new(199.82, -6.38, -4.25),
+    CFrame.new(285.12, -6.38, -6.46),
+    CFrame.new(396.30, -6.38, -3.62),
+    CFrame.new(541.78, -6.38, 1.57),
+    CFrame.new(755.17, -6.38, 0.97),
+    CFrame.new(1072.66, -6.38, -1.53),
+    CFrame.new(1548.96, -6.38, -0.52),
+    CFrame.new(2244.32, -6.38, -6.54),
+    CFrame.new(2598.85, -6.38, 6.92)
 }
 
--- --- [ FUNCIONES DE LISTA ] ---
-local function GetRarityNames()
-    local names = {}
-    local f = ReplicatedStorage.Assets:FindFirstChild("Brainrots")
-    if f then for _, i in pairs(f:GetChildren()) do if i:IsA("Folder") then table.insert(names, i.Name) end end end
-    table.sort(names)
-    return names
+local Collected = 0
+local MaxInv = 4
+local Processed = {}
+local HomeCF = SafeZones[1] -- Por defecto tu base
+
+local Config = {
+    Enabled = false, Speed = 300, TsunamiRange = 300,
+    Targets = { Tickets = false, Consoles = false, Money = false, LuckyBlocks = false, Brainrots = false },
+    Sel = { Lucky = {}, Brain = {} }
+}
+
+local function GetNames(folder)
+    local n = {}
+    local f = ReplicatedStorage.Assets:FindFirstChild(folder)
+    if f then for _,v in pairs(f:GetChildren()) do table.insert(n, v.Name) end end
+    return n
 end
 
-local function GetLuckyBlockNames()
-    local names = {}
-    local f = ReplicatedStorage.Assets:FindFirstChild("LuckyBlocks")
-    if f then for _, i in pairs(f:GetChildren()) do table.insert(names, i.Name) end end
-    table.sort(names)
-    return names
-end
+local Section = FarmTab:Section({ Title = "🌊 Auto-Farm Pro" })
 
--- --- [ UI INTERFACE ] ---
-local SectionFarm = FarmTab:Section({ Title = "🌊 Auto-Farm Inteligente" })
+Section:Toggle({ Title = "🔥 ACTIVAR", Callback = function(s) Config.Enabled = s; if s then Collected = 0 end end })
 
-SectionFarm:Toggle({
-    Title = "🔥 ACTIVAR AUTO-FARM",
-    Desc = "Prioridad: Tsunami Cerca > Inventario Lleno > Farmear",
-    Callback = function(s) 
-        FarmConfig.Enabled = s 
-        if s then CollectedCount = 0 end 
-    end
+-- SLIDER CORREGIDO (Estructura Value)
+Section:Slider({
+    Title = "Rango Detección Tsunami",
+    Step = 10,
+    Value = { Min = 50, Max = 1000, Default = 300 },
+    Callback = function(v) Config.TsunamiRange = v end
 })
 
-SectionFarm:Slider({
-    Title = "Distancia de Pánico (Tsunami)",
-    Desc = "Si la ola está a menos de X studs, corre a la base",
-    Min = 50, Max = 1000, Default = 300, -- Puedes bajarlo, pero cuidado
-    Callback = function(v) FarmConfig.TsunamiRange = v end
-})
+Section:Button({ Title = "🏠 Fijar Casa Aquí", Callback = function() 
+    if LocalPlayer.Character then HomeCF = LocalPlayer.Character.HumanoidRootPart.CFrame end 
+end })
 
-SectionFarm:Button({
-    Title = "🗑️ Resetear Inventario",
-    Callback = function() ProcessedIDs = {}; CollectedCount = 0 end
-})
+Section:Button({ Title = "🗑️ Resetear Memoria", Callback = function() Processed = {}; Collected = 0 end })
 
--- CATEGORÍAS
-SectionFarm:Toggle({ Title = "Recoger Tickets", Callback = function(s) FarmConfig.Targets.Tickets = s end })
-SectionFarm:Toggle({ Title = "Recoger Consolas", Callback = function(s) FarmConfig.Targets.Consoles = s end })
-SectionFarm:Toggle({ Title = "Recoger Dinero", Callback = function(s) FarmConfig.Targets.Money = s end })
+Section:Toggle({ Title = "Tickets", Callback = function(s) Config.Targets.Tickets = s end })
+Section:Toggle({ Title = "Consolas", Callback = function(s) Config.Targets.Consoles = s end })
+Section:Toggle({ Title = "Dinero", Callback = function(s) Config.Targets.Money = s end })
 
-SectionFarm:Toggle({ Title = "Recoger Lucky Blocks", Callback = function(s) FarmConfig.Targets.LuckyBlocks = s end })
-SectionFarm:Dropdown({
-    Title = "Seleccionar Lucky Blocks", Multi = true, Values = GetLuckyBlockNames(),
-    Callback = function(v) FarmConfig.Selection.LuckyBlocks = v end
-})
+Section:Toggle({ Title = "Lucky Blocks", Callback = function(s) Config.Targets.LuckyBlocks = s end })
+Section:Dropdown({ Title = "Select Lucky Blocks", Multi = true, Values = GetNames("LuckyBlocks"), Callback = function(v) Config.Sel.Lucky = v end })
 
-SectionFarm:Toggle({ Title = "Recoger Brainrots", Callback = function(s) FarmConfig.Targets.Brainrots = s end })
-SectionFarm:Dropdown({
-    Title = "Seleccionar Rareza (Brainrots)", Multi = true, Values = GetRarityNames(),
-    Callback = function(v) FarmConfig.Selection.Brainrots = v end
-})
+Section:Toggle({ Title = "Brainrots", Callback = function(s) Config.Targets.Brainrots = s end })
+Section:Dropdown({ Title = "Select Brainrots", Multi = true, Values = GetNames("Brainrots"), Callback = function(v) Config.Sel.Brain = v end })
 
-
--- --- [ MOTOR DE MOVIMIENTO ] ---
-local CurrentTween = nil
-
-local function MoverRapido(DestinoCFrame)
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-
-    local Distancia = (root.Position - DestinoCFrame.Position).Magnitude
-    local Tiempo = Distancia / FarmConfig.Speed
-    local Info = TweenInfo.new(Tiempo, Enum.EasingStyle.Linear)
-    
-    if CurrentTween then CurrentTween:Cancel() end
-    CurrentTween = TweenService:Create(root, Info, {CFrame = DestinoCFrame})
-    CurrentTween:Play()
-    CurrentTween.Completed:Wait()
-    CurrentTween = nil
-    root.Velocity = Vector3.zero
-end
-
--- --- [ LÓGICA DE ESCANEO ] ---
-
--- NUEVA LÓGICA: Solo devuelve TRUE si el tsunami está CERCA
-local function IsTsunamiThreat()
-    local folder = workspace:FindFirstChild("ActiveTsunamis")
+local CurTween = nil
+local function Tween(CF)
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    
-    if folder and root then
-        for _, wave in pairs(folder:GetChildren()) do
-            -- Buscamos la parte física de la ola
-            local wavePart = wave:IsA("BasePart") and wave or wave:FindFirstChildWhichIsA("BasePart", true)
-            if wavePart then
-                local dist = (root.Position - wavePart.Position).Magnitude
-                -- AQUÍ ESTÁ EL CAMBIO: Solo nos asustamos si está dentro del rango
-                if dist < FarmConfig.TsunamiRange then
-                    return true
-                end
-            end
+    if not root then return end
+    local Time = (root.Position - CF.Position).Magnitude / Config.Speed
+    if CurTween then CurTween:Cancel() end
+    CurTween = TweenService:Create(root, TweenInfo.new(Time, Enum.EasingStyle.Linear), {CFrame = CF})
+    CurTween:Play(); CurTween.Completed:Wait(); CurTween = nil; root.Velocity = Vector3.zero
+end
+
+local function CheckTsunami()
+    local f = workspace:FindFirstChild("ActiveTsunamis")
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if f and root then
+        for _,w in pairs(f:GetChildren()) do
+            local p = w:IsA("BasePart") and w or w:FindFirstChildWhichIsA("BasePart", true)
+            if p and (root.Position - p.Position).Magnitude < Config.TsunamiRange then return true end
         end
     end
     return false
 end
 
-local function GetBestTarget()
-    local closest, shortDist = nil, math.huge
-    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not root then return nil end
-
-    local Candidates = {}
-
-    -- 1. Tickets/Consolas/Dinero
-    if FarmConfig.Targets.Tickets then 
-        local f = workspace:FindFirstChild("ArcadeEventTickets")
-        if f then for _,v in pairs(f:GetChildren()) do table.insert(Candidates, v) end end
+local function GetSafe()
+    local c, sd = nil, math.huge
+    local root = LocalPlayer.Character.HumanoidRootPart
+    for _,cf in pairs(SafeZones) do
+        local d = (root.Position - cf.Position).Magnitude
+        if d < sd then sd = d; c = cf end
     end
-    if FarmConfig.Targets.Consoles then 
-        local f = workspace:FindFirstChild("ArcadeEventConsoles")
-        if f then for _,v in pairs(f:GetChildren()) do table.insert(Candidates, v) end end
-    end
-    if FarmConfig.Targets.Money then 
-        local f = workspace:FindFirstChild("MoneyEventParts")
-        if f then for _,v in pairs(f:GetChildren()) do table.insert(Candidates, v) end end
-    end
-
-    -- 2. Lucky Blocks
-    if FarmConfig.Targets.LuckyBlocks then
-        local f = workspace:FindFirstChild("ActiveLuckyBlocks")
-        if f then
-            for _, m in pairs(f:GetChildren()) do
-                if m:IsA("Model") and not ProcessedIDs[m] then
-                    for _, sel in pairs(FarmConfig.Selection.LuckyBlocks) do
-                        if m.Name:find(sel) then table.insert(Candidates, m); break end
-                    end
-                end
-            end
-        end
-    end
-
-    -- 3. Brainrots
-    if FarmConfig.Targets.Brainrots then
-        local f = workspace:FindFirstChild("ActiveBrainrots")
-        if f then
-            for _, rFolder in pairs(f:GetChildren()) do
-                if table.find(FarmConfig.Selection.Brainrots, rFolder.Name) then
-                    for _, m in pairs(rFolder:GetChildren()) do
-                        if m.Name == "RenderedBrainrot" then
-                            for _, real in pairs(m:GetChildren()) do 
-                                if real:IsA("Model") and not ProcessedIDs[real] then table.insert(Candidates, real) end 
-                            end
-                        elseif m:IsA("Model") and not ProcessedIDs[m] then
-                            table.insert(Candidates, m)
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    -- Buscar el más cercano
-    for _, item in pairs(Candidates) do
-        local part = item:IsA("BasePart") and item or item:FindFirstChildWhichIsA("BasePart", true)
-        if part then
-            local dist = (root.Position - part.Position).Magnitude
-            if dist < shortDist then shortDist = dist; closest = item end
-        end
-    end
-    return closest
+    return c
 end
 
--- --- [ MOTOR PRINCIPAL ] ---
+local function GetTarget()
+    local c, sd = nil, math.huge
+    local root = LocalPlayer.Character.HumanoidRootPart
+    local List = {}
+
+    if Config.Targets.Tickets then local f=workspace:FindFirstChild("ArcadeEventTickets") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
+    if Config.Targets.Consoles then local f=workspace:FindFirstChild("ArcadeEventConsoles") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
+    if Config.Targets.Money then local f=workspace:FindFirstChild("MoneyEventParts") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
+
+    if Config.Targets.LuckyBlocks then
+        local f=workspace:FindFirstChild("ActiveLuckyBlocks")
+        if f then for _,m in pairs(f:GetChildren()) do 
+            if m:IsA("Model") and not Processed[m] then
+                for _,s in pairs(Config.Sel.Lucky) do if m.Name:find(s) then table.insert(List,m) break end end
+            end
+        end end
+    end
+
+    if Config.Targets.Brainrots then
+        local f=workspace:FindFirstChild("ActiveBrainrots")
+        if f then for _,fold in pairs(f:GetChildren()) do
+            if table.find(Config.Sel.Brain, fold.Name) then
+                for _,m in pairs(fold:GetChildren()) do
+                    if m.Name == "RenderedBrainrot" then
+                        for _,r in pairs(m:GetChildren()) do if r:IsA("Model") and not Processed[r] then table.insert(List,r) end end
+                    elseif m:IsA("Model") and not Processed[m] then table.insert(List,m) end
+                end
+            end
+        end end
+    end
+
+    for _,v in pairs(List) do
+        local p = v:IsA("BasePart") and v or v:FindFirstChildWhichIsA("BasePart", true)
+        if p then local d = (root.Position - p.Position).Magnitude; if d < sd then sd = d; c = v end end
+    end
+    return c
+end
 
 RunService.Stepped:Connect(function()
-    if FarmConfig.Enabled and LocalPlayer.Character then
-        for _, p in pairs(LocalPlayer.Character:GetDescendants()) do
-            if p:IsA("BasePart") and p.CanCollide then p.CanCollide = false end
-        end
-        local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if root then root.Velocity = Vector3.zero end
+    if Config.Enabled and LocalPlayer.Character then
+        for _,p in pairs(LocalPlayer.Character:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide=false end end
+        if LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then LocalPlayer.Character.HumanoidRootPart.Velocity=Vector3.zero end
     end
 end)
 
 task.spawn(function()
     while true do
-        if FarmConfig.Enabled then
+        if Config.Enabled then
             local char = LocalPlayer.Character
-            local hum = char and char:FindFirstChild("Humanoid")
-            local root = char and char:FindFirstChild("HumanoidRootPart")
-
-            if root and hum and hum.Health > 0 then
+            if char and char:FindFirstChild("HumanoidRootPart") and char.Humanoid.Health > 0 then
+                local Root = char.HumanoidRootPart
                 
-                -- [ ESTADO 1: TSUNAMI CERCA (Peligro Inminente) ]
-                if IsTsunamiThreat() then
-                    -- Si estamos lejos de la base, vamos para allá
-                    if (root.Position - RealBaseCFrame.Position).Magnitude > 5 then
-                        -- Feedback Visual
-                        if not workspace:FindFirstChild("VortexAlert") then
-                            local h = Instance.new("Hint", workspace); h.Name="VortexAlert"; h.Text="🌊 TSUNAMI CERCA - RETIRADA A LA BASE"; Debris:AddItem(h, 1)
-                        end
-                        MoverRapido(RealBaseCFrame)
-                    else
-                        -- Si ya estamos en la base, nos quedamos quietos y esperamos a que la ola se aleje
-                        if CurrentTween then CurrentTween:Cancel(); CurrentTween = nil end
-                        root.CFrame = RealBaseCFrame
-                    end
-
-                -- [ ESTADO 2: INVENTARIO LLENO (Depositar) ]
-                elseif CollectedCount >= MaxInventory then
-                    if (root.Position - RealBaseCFrame.Position).Magnitude > 5 then
-                         if not workspace:FindFirstChild("VortexAlert") then
-                            local h = Instance.new("Hint", workspace); h.Name="VortexAlert"; h.Text="🎒 INVENTARIO LLENO - DEPOSITANDO"; Debris:AddItem(h, 1)
-                        end
-                        MoverRapido(RealBaseCFrame)
-                    else
-                        -- Llegamos a la base
-                        CollectedCount = 0
-                        ProcessedIDs = {} 
-                        task.wait(1.5) -- Esperar un poco en la base para asegurar que deposite
-                    end
-
-                -- [ ESTADO 3: FARMEO (Zona Segura y con Espacio) ]
+                if CheckTsunami() then
+                    local Safe = GetSafe()
+                    if Safe and (Root.Position - Safe.Position).Magnitude > 5 then Tween(Safe) else if CurTween then CurTween:Cancel() end Root.CFrame=Safe end
+                
+                elseif Collected >= MaxInv then
+                    if (Root.Position - HomeCF.Position).Magnitude > 5 then Tween(HomeCF) else Collected=0; Processed={}; task.wait(1) end
+                
                 else
-                    local Target = GetBestTarget()
-                    if Target then
-                        local Part = Target:IsA("BasePart") and Target or Target:FindFirstChildWhichIsA("BasePart", true)
-                        
-                        if Part then
-                            if (root.Position - Part.Position).Magnitude > 3 then
-                                MoverRapido(Part.CFrame)
-                            end
-
-                            local Prompt = Target:FindFirstChildWhichIsA("ProximityPrompt", true)
-                            if Prompt then
-                                fireproximityprompt(Prompt)
-                                ProcessedIDs[Target] = true
-                                CollectedCount = CollectedCount + 1
-                                task.wait(0.5)
-                            end
+                    local T = GetTarget()
+                    if T then
+                        local P = T:IsA("BasePart") and T or T:FindFirstChildWhichIsA("BasePart", true)
+                        if P then
+                            if (Root.Position - P.Position).Magnitude > 4 then Tween(P.CFrame) end
+                            local Pr = T:FindFirstChildWhichIsA("ProximityPrompt", true)
+                            if Pr then fireproximityprompt(Pr); Processed[T]=true; Collected=Collected+1; task.wait(0.5) end
                         end
-                    else
-                         -- Si no hay nada que farmear, nos quedamos en el aire o quietos, NO vamos a la base innecesariamente
-                         -- Opcional: Ir a la base si no hay nada que hacer para estar seguros
                     end
                 end
             end
-        else
-             if CurrentTween then CurrentTween:Cancel(); CurrentTween = nil end
-        end
+        else if CurTween then CurTween:Cancel(); CurTween=nil end end
         task.wait()
     end
 end)
