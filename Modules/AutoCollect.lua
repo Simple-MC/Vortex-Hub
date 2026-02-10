@@ -1,9 +1,6 @@
 --[[
-    MODULE: VORTEX AUTO-FARM v10 (IMMORTAL FIX)
-    FIXES:
-    1. Anti-Crash Logic: Script won't stop if you die.
-    2. Auto-Respawn Detection: Finds new character instantly.
-    3. Safe RootPart Checks: Prevents "Index nil" errors.
+    MODULE: VORTEX AUTO-FARM v11 (PRECISION UPDATE)
+    TARGET: workspace.ActiveBrainrots.Rareza.Rendered.Mob.Root.TakePrompt
 ]]
 
 local Players = game:GetService("Players")
@@ -13,17 +10,17 @@ local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Debris = game:GetService("Debris")
 
--- --- [ ESPERAR TAB (SEGURIDAD) ] ---
+-- --- [ SEGURIDAD: ESPERAR TAB ] ---
 local FarmTab = _G.AutoFarmTab
 local t = 0
 while not FarmTab and t < 5 do task.wait(0.1); t=t+0.1; FarmTab = _G.AutoFarmTab end
 if not FarmTab then warn("Falta AutoFarmTab"); return end
 
--- --- [ CONFIGURACIÓN BASE ] ---
-local HomeCF = CFrame.new(136.92, 3.11, -9.24) -- Tu base
+-- --- [ CONFIGURACIÓN ] ---
+local HomeCF = CFrame.new(136.92, 3.11, -9.24)
 local Collected = 0
 local MaxInv = 4
-local Processed = {}
+local Processed = {} -- Memoria de IDs procesados
 
 local Config = {
     Enabled = false, Speed = 300, TsunamiRange = 300,
@@ -31,9 +28,9 @@ local Config = {
     Sel = { Lucky = {}, Brain = {} }
 }
 
--- --- [ LISTAS SEGURAS ] ---
+-- --- [ ZONAS SEGURAS ] ---
 local SafeZones = {
-    CFrame.new(136.92, 3.11, -9.24), -- Base
+    CFrame.new(136.92, 3.11, -9.24),
     CFrame.new(199.82, -6.38, -4.25),
     CFrame.new(285.12, -6.38, -6.46),
     CFrame.new(396.30, -6.38, -3.62),
@@ -54,43 +51,36 @@ local function GetNames(folder)
 end
 
 -- --- [ UI INTERFACE ] ---
-local Section = FarmTab:Section({ Title = "🌊 Auto-Farm Inmortal" })
+local Section = FarmTab:Section({ Title = "🌊 Auto-Farm Precision" })
 
 Section:Toggle({ Title = "🔥 ACTIVAR", Callback = function(s) Config.Enabled = s; if s then Collected = 0 end end })
 
 Section:Slider({
-    Title = "Rango Detección Tsunami",
-    Step = 10,
-    Value = { Min = 50, Max = 1000, Default = 300 },
+    Title = "Rango Tsunami", Step = 10, Value = { Min = 50, Max = 1000, Default = 300 },
     Callback = function(v) Config.TsunamiRange = v end
 })
 
-Section:Button({ Title = "🏠 Fijar Casa Aquí", Callback = function() 
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then 
-        HomeCF = LocalPlayer.Character.HumanoidRootPart.CFrame 
-    end 
+Section:Button({ Title = "🏠 Fijar Casa", Callback = function() 
+    if LocalPlayer.Character then HomeCF = LocalPlayer.Character.HumanoidRootPart.CFrame end 
 end })
 
 Section:Button({ Title = "🗑️ Resetear Memoria", Callback = function() Processed = {}; Collected = 0 end })
 
--- TARGETS
 Section:Toggle({ Title = "Tickets", Callback = function(s) Config.Targets.Tickets = s end })
 Section:Toggle({ Title = "Consolas", Callback = function(s) Config.Targets.Consoles = s end })
 Section:Toggle({ Title = "Dinero", Callback = function(s) Config.Targets.Money = s end })
+
 Section:Toggle({ Title = "Lucky Blocks", Callback = function(s) Config.Targets.LuckyBlocks = s end })
 Section:Dropdown({ Title = "Select Lucky Blocks", Multi = true, Values = GetNames("LuckyBlocks"), Callback = function(v) Config.Sel.Lucky = v end })
+
 Section:Toggle({ Title = "Brainrots", Callback = function(s) Config.Targets.Brainrots = s end })
 Section:Dropdown({ Title = "Select Brainrots", Multi = true, Values = GetNames("Brainrots"), Callback = function(v) Config.Sel.Brain = v end })
 
--- --- [ CORE: FUNCIONES SEGURAS ] ---
 
--- Función auxiliar para obtener RootPart sin errores
+-- --- [ LÓGICA CORE ] ---
+
 local function GetRoot()
-    local char = LocalPlayer.Character
-    if char then
-        return char:FindFirstChild("HumanoidRootPart")
-    end
-    return nil
+    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
 end
 
 local CurTween = nil
@@ -102,25 +92,15 @@ local function Tween(TargetCF)
     local Time = Dist / Config.Speed
     
     if CurTween then CurTween:Cancel() end
-    
-    local Info = TweenInfo.new(Time, Enum.EasingStyle.Linear)
-    CurTween = TweenService:Create(root, Info, {CFrame = TargetCF})
+    CurTween = TweenService:Create(root, TweenInfo.new(Time, Enum.EasingStyle.Linear), {CFrame = TargetCF})
     CurTween:Play()
     
-    -- Esperamos a que termine O que el personaje muera (Root borrado)
     local t = 0
     while t < Time do
-        if not GetRoot() then -- Si morimos a medio vuelo
-            if CurTween then CurTween:Cancel() end
-            return 
-        end
-        if not Config.Enabled then CurTween:Cancel(); return end
-        task.wait(0.1)
-        t = t + 0.1
+        if not GetRoot() or not Config.Enabled then if CurTween then CurTween:Cancel() end return end
+        task.wait(0.1); t=t+0.1
     end
-    
-    CurTween = nil
-    if GetRoot() then root.Velocity = Vector3.zero end
+    CurTween = nil; if GetRoot() then root.Velocity = Vector3.zero end
 end
 
 local function CheckTsunami()
@@ -138,8 +118,7 @@ end
 local function GetSafe()
     local c, sd = nil, math.huge
     local root = GetRoot()
-    if not root then return SafeZones[1] end -- Si no hay root, devuelve base por defecto
-    
+    if not root then return SafeZones[1] end
     for _,cf in pairs(SafeZones) do
         local d = (root.Position - cf.Position).Magnitude
         if d < sd then sd = d; c = cf end
@@ -153,10 +132,12 @@ local function GetTarget()
     if not root then return nil end
     local List = {}
 
+    -- Tickets/Money
     if Config.Targets.Tickets then local f=workspace:FindFirstChild("ArcadeEventTickets") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
     if Config.Targets.Consoles then local f=workspace:FindFirstChild("ArcadeEventConsoles") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
     if Config.Targets.Money then local f=workspace:FindFirstChild("MoneyEventParts") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
 
+    -- Lucky Blocks
     if Config.Targets.LuckyBlocks then
         local f=workspace:FindFirstChild("ActiveLuckyBlocks")
         if f then for _,m in pairs(f:GetChildren()) do 
@@ -166,27 +147,38 @@ local function GetTarget()
         end end
     end
 
+    -- Brainrots (LÓGICA ACTUALIZADA)
     if Config.Targets.Brainrots then
         local f=workspace:FindFirstChild("ActiveBrainrots")
-        if f then for _,fold in pairs(f:GetChildren()) do
-            if table.find(Config.Sel.Brain, fold.Name) then
-                for _,m in pairs(fold:GetChildren()) do
-                    if m.Name == "RenderedBrainrot" then
-                        for _,r in pairs(m:GetChildren()) do if r:IsA("Model") and not Processed[r] then table.insert(List,r) end end
-                    elseif m:IsA("Model") and not Processed[m] then table.insert(List,m) end
+        if f then for _,rarityFolder in pairs(f:GetChildren()) do
+            if table.find(Config.Sel.Brain, rarityFolder.Name) then
+                for _,container in pairs(rarityFolder:GetChildren()) do
+                    -- Si es el contenedor "RenderedBrainrot"
+                    if container.Name == "RenderedBrainrot" then
+                        for _,mob in pairs(container:GetChildren()) do
+                            -- Verificamos si tiene "Root" y "TakePrompt"
+                            if mob:IsA("Model") and not Processed[mob] then
+                                table.insert(List, mob)
+                            end
+                        end
+                    elseif container:IsA("Model") and not Processed[container] then
+                        table.insert(List, container)
+                    end
                 end
             end
         end end
     end
 
+    -- Buscar más cercano
     for _,v in pairs(List) do
-        local p = v:IsA("BasePart") and v or v:FindFirstChildWhichIsA("BasePart", true)
+        -- Prioridad: Buscar la parte "Root" primero, si no, la PrimaryPart
+        local p = v:FindFirstChild("Root") or (v:IsA("BasePart") and v) or v:FindFirstChildWhichIsA("BasePart", true)
         if p then local d = (root.Position - p.Position).Magnitude; if d < sd then sd = d; c = v end end
     end
     return c
 end
 
--- --- [ LOOP "INMORTAL" (Anti-Crash) ] ---
+-- --- [ LOOP PRINCIPAL ] ---
 
 RunService.Stepped:Connect(function()
     if Config.Enabled then
@@ -200,53 +192,54 @@ end)
 
 task.spawn(function()
     while true do
-        -- pcall evita que el script se detenga si hay un error (ej: personaje nulo)
         local success, err = pcall(function()
             if Config.Enabled then
                 local root = GetRoot()
                 local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
                 
-                -- Solo ejecutamos si estamos vivos
                 if root and hum and hum.Health > 0 then
                     
+                    -- 1. Tsunami Check
                     if CheckTsunami() then
                         local Safe = GetSafe()
                         if Safe and (root.Position - Safe.Position).Magnitude > 5 then Tween(Safe) end
                     
+                    -- 2. Inventory Check
                     elseif Collected >= MaxInv then
-                        if (root.Position - HomeCF.Position).Magnitude > 5 then 
-                            Tween(HomeCF) 
-                        else 
-                            Collected=0; Processed={}; task.wait(1) 
-                        end
+                        if (root.Position - HomeCF.Position).Magnitude > 5 then Tween(HomeCF) 
+                        else Collected=0; Processed={}; task.wait(1.5) end
                     
+                    -- 3. Farming
                     else
-                        local T = GetTarget()
-                        if T then
-                            local P = T:IsA("BasePart") and T or T:FindFirstChildWhichIsA("BasePart", true)
-                            if P then
-                                if (root.Position - P.Position).Magnitude > 4 then Tween(P.CFrame) end
-                                local Pr = T:FindFirstChildWhichIsA("ProximityPrompt", true)
-                                if Pr then 
-                                    fireproximityprompt(Pr); Processed[T]=true; Collected=Collected+1; task.wait(0.5) 
+                        local Target = GetTarget()
+                        if Target then
+                            -- Buscamos la parte exacta "Root" donde dijiste que está el prompt
+                            local TargetPart = Target:FindFirstChild("Root") or (Target:IsA("BasePart") and Target) or Target:FindFirstChildWhichIsA("BasePart", true)
+                            
+                            if TargetPart then
+                                -- Moverse
+                                if (root.Position - TargetPart.Position).Magnitude > 3 then Tween(TargetPart.CFrame) end
+                                
+                                -- Interactuar (LÓGICA PRECISA)
+                                -- Buscamos "TakePrompt" dentro de "Root" específicamente
+                                local Prompt = TargetPart:FindFirstChild("TakePrompt") or Target:FindFirstChildWhichIsA("ProximityPrompt", true)
+                                
+                                if Prompt then 
+                                    fireproximityprompt(Prompt)
+                                    Processed[Target] = true
+                                    Collected = Collected + 1
+                                    task.wait(0.5) 
                                 end
                             end
                         end
                     end
                 else
-                    -- Si estamos muertos, esperamos a revivir sin hacer nada
-                    if CurTween then CurTween:Cancel(); CurTween = nil end
+                    if CurTween then CurTween:Cancel(); CurTween=nil end
                     task.wait(1)
                 end
             end
         end)
-
-        if not success then
-            -- Si algo falló, solo imprime aviso y sigue intentando (no crashea)
-            warn("Vortex Auto-Farm: Pequeño error recuperado ->", err)
-            task.wait(1)
-        end
-        
+        if not success then task.wait(1) end
         task.wait(0.1)
     end
 end)
