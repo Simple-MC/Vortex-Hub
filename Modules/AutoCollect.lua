@@ -1,8 +1,7 @@
 --[[
-    MODULE: VORTEX AUTO-FARM v28 (PHYSICS FIX)
-    FIXES:
-    1. Vuelo de Pánico IMPARABLE (ya no se cancela a sí mismo).
-    2. Gravedad Normal: Solo congela fisicas mientras vuela, no todo el tiempo.
+    MODULE: VORTEX AUTO-FARM v29 (UFO EDITION)
+    ADDED: Auto Collect UFO Money (workspace.UFOEventParts).
+    KEPT: Physics Fix, Survival Logic, Brainrot Deep Search.
 ]]
 
 local Players = game:GetService("Players")
@@ -29,7 +28,7 @@ local Config = {
     DebugMode = true,
     Speed = 350, 
     TsunamiRange = 300, 
-    Targets = { Tickets = false, Consoles = false, Money = false, LuckyBlocks = false, Brainrots = false },
+    Targets = { Tickets = false, Consoles = false, Money = false, UFO = false, LuckyBlocks = false, Brainrots = false },
     Sel = { Lucky = {}, Brain = {} }
 }
 
@@ -66,9 +65,8 @@ local function GetRoot() return LocalPlayer.Character and LocalPlayer.Character:
 
 -- --- [ VUELO MEJORADO ] ---
 local CurTween = nil
-local IsFlying = false -- Variable para controlar las físicas
+local IsFlying = false 
 
--- Parametro 'Emergency': Si es true, NADA detiene este vuelo (para huir)
 local function FlyTo(TargetCF, Emergency)
     local root = GetRoot()
     if not root then return end
@@ -78,7 +76,7 @@ local function FlyTo(TargetCF, Emergency)
     
     if CurTween then CurTween:Cancel() end
     
-    IsFlying = true -- Activamos modo antigravedad
+    IsFlying = true 
     CurTween = TweenService:Create(root, TweenInfo.new(Time, Enum.EasingStyle.Linear), {CFrame = TargetCF})
     CurTween:Play()
     
@@ -90,7 +88,6 @@ local function FlyTo(TargetCF, Emergency)
             return 
         end
         
-        -- SOLO cancelamos si NO es una emergencia (si estamos farmeando)
         if not Emergency and Config.Enabled then
              local folder = workspace:FindFirstChild("ActiveTsunamis")
              if folder then
@@ -99,7 +96,7 @@ local function FlyTo(TargetCF, Emergency)
                     if p and (root.Position - p.Position).Magnitude < Config.TsunamiRange then
                         if CurTween then CurTween:Cancel() end
                         IsFlying = false
-                        return -- Cancelar vuelo para huir
+                        return 
                     end
                 end
              end
@@ -109,7 +106,7 @@ local function FlyTo(TargetCF, Emergency)
     end
     
     CurTween = nil
-    IsFlying = false -- Desactivamos modo antigravedad al llegar
+    IsFlying = false 
     if GetRoot() then root.Velocity = Vector3.zero end
 end
 
@@ -158,6 +155,12 @@ local function GetTarget()
     if Config.Targets.Tickets then local f=workspace:FindFirstChild("ArcadeEventTickets") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
     if Config.Targets.Consoles then local f=workspace:FindFirstChild("ArcadeEventConsoles") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
     if Config.Targets.Money then local f=workspace:FindFirstChild("MoneyEventParts") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
+    
+    -- UFO MONEY (Nuevo)
+    if Config.Targets.UFO then 
+        local f=workspace:FindFirstChild("UFOEventParts") 
+        if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end 
+    end
 
     if Config.Targets.LuckyBlocks then
         local f=workspace:FindFirstChild("ActiveLuckyBlocks")
@@ -202,7 +205,7 @@ local function GetTarget()
 end
 
 -- --- [ INTERFAZ ] ---
-local Section = FarmTab:Section({ Title = "🔥 VORTEX v28 (PHYSICS FIX)" })
+local Section = FarmTab:Section({ Title = "🔥 VORTEX v29 (UFO EDITION)" })
 
 Section:Toggle({ Title = "ACTIVAR", Callback = function(s) Config.Enabled = s; if s then Collected = 0; Notify("Farm Iniciado") end end })
 Section:Toggle({ Title = "Modo Debug", Default = true, Callback = function(s) Config.DebugMode = s end })
@@ -213,6 +216,7 @@ Section:Button({ Title = "🗑️ Limpiar Memoria", Callback = function() Proces
 Section:Toggle({ Title = "Tickets", Callback = function(s) Config.Targets.Tickets = s end })
 Section:Toggle({ Title = "Consolas", Callback = function(s) Config.Targets.Consoles = s end })
 Section:Toggle({ Title = "Dinero", Callback = function(s) Config.Targets.Money = s end })
+Section:Toggle({ Title = "UFO Money 👽", Callback = function(s) Config.Targets.UFO = s end }) -- Nuevo Toggle
 
 Section:Toggle({ Title = "Lucky Blocks", Callback = function(s) Config.Targets.LuckyBlocks = s end })
 Section:Dropdown({ Title = "Filtro Lucky", Multi = true, Values = GetNames("LuckyBlocks"), Callback = function(v) Config.Sel.Lucky = v end })
@@ -220,10 +224,9 @@ Section:Dropdown({ Title = "Filtro Lucky", Multi = true, Values = GetNames("Luck
 Section:Toggle({ Title = "Brainrots", Callback = function(s) Config.Targets.Brainrots = s end })
 Section:Dropdown({ Title = "Filtro Brainrot", Multi = true, Values = GetNames("Brainrots"), Callback = function(v) Config.Sel.Brain = v end })
 
--- --- [ LOOP FÍSICO (SOLO CUANDO VUELA) ] ---
+-- --- [ LOOP FÍSICO ] ---
 RunService.Stepped:Connect(function()
     if Config.Enabled and LocalPlayer.Character and IsFlying then
-        -- Solo quitamos colisiones y gravedad SI ESTAMOS VOLANDO
         for _,p in pairs(LocalPlayer.Character:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide=false end end
         if GetRoot() then GetRoot().Velocity = Vector3.zero end
     end
@@ -251,12 +254,12 @@ task.spawn(function()
                     if isPanic then
                         Notify("⚠️ PELIGRO! Refugiándose...")
                         local SafeSpot = GetSafe()
-                        FlyTo(SafeSpot, true) -- TRUE = Emergencia (No cancelar)
+                        FlyTo(SafeSpot, true) 
                         task.wait(0.2)
                         
                     elseif Collected >= MaxInv then
                         Notify("🎒 Lleno. Volviendo...")
-                        FlyTo(HomeCF, true) -- TRUE = Volver a casa es seguro
+                        FlyTo(HomeCF, true)
                         if (root.Position - HomeCF.Position).Magnitude < 10 then
                             task.wait(1.5)
                             Collected = 0
@@ -272,7 +275,7 @@ task.spawn(function()
 
                             if MovePart then
                                 if (root.Position - MovePart.Position).Magnitude > 2 then 
-                                    FlyTo(MovePart.CFrame, false) -- FALSE = Recolección (Cancelable)
+                                    FlyTo(MovePart.CFrame, false) 
                                 end
                                 
                                 if Prompt then
