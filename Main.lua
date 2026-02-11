@@ -5,8 +5,7 @@ local Window = WindUI:CreateWindow({
     Title = "VORTEX HUB",
     Icon = "terminal", 
     Author = "Simple-MC",
-    Folder = "VortexConfig",
-    Background = "rbxassetid://11854441530"
+    Folder = "VortexConfig"
 })
 
 local function LoadModule(name)
