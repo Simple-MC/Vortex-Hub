@@ -6,6 +6,7 @@ local Window = WindUI:CreateWindow({
     Icon = "rbxassetid://114764180805798", 
     Author = "Simple-MC",
     Folder = "VortexConfig",      
+    BackgroundImageTransparency = 0.42,
     Background = "rbxassetid://114764180805798"
 })
 
