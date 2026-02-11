@@ -9,9 +9,6 @@ local Window = WindUI:CreateWindow({
     Background = "rbxassetid://114764180805798"
 })
 
-Window:EditElement("Transparency", 0.45) -- Ajusta de 0 a 1
-
-
 local function LoadModule(name)
     local url = "https://raw.githubusercontent.com/Simple-MC/Vortex-Hub/main/Modules/" .. name .. ".lua"
     local success, result = pcall(function()
