@@ -29,6 +29,7 @@ LoadModule("Visuals")    -- Temporizadores del mapa
 LoadModule("Combat")     -- God Mode y Anti-Muros
 LoadModule("Esp")        -- El ESP
 LoadModule("Esp2")        -- El ESP avanzado (Brainrots y LuckyBlocks)
+LoadModule("Esp2")        -- El ESP avanzado enfocado en UFO Coins 
 LoadModule("Utilities")  -- VIP y Prompts
 LoadModule("AutoFarm")
 LoadModule("AutoCollect") 
