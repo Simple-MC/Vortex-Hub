@@ -1,7 +1,9 @@
 --[[
-    MODULE: VORTEX AUTO-FARM v29 (UFO EDITION)
-    ADDED: Auto Collect UFO Money (workspace.UFOEventParts).
-    KEPT: Physics Fix, Survival Logic, Brainrot Deep Search.
+    MODULE: VORTEX AUTO-FARM v30 (CLEAN & STABLE)
+    FIXES:
+    1. NoClip se desactiva al apagar el Farm (Physics Restore).
+    2. Notificaciones Debug desactivadas por defecto.
+    3. UI limpia sin botones innecesarios.
 ]]
 
 local Players = game:GetService("Players")
@@ -25,7 +27,7 @@ local Processed = {}
 
 local Config = {
     Enabled = false,
-    DebugMode = true,
+    DebugMode = false, -- Desactivado por defecto para no molestar
     Speed = 350, 
     TsunamiRange = 300, 
     Targets = { Tickets = false, Consoles = false, Money = false, UFO = false, LuckyBlocks = false, Brainrots = false },
@@ -156,7 +158,7 @@ local function GetTarget()
     if Config.Targets.Consoles then local f=workspace:FindFirstChild("ArcadeEventConsoles") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
     if Config.Targets.Money then local f=workspace:FindFirstChild("MoneyEventParts") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
     
-    -- UFO MONEY (Nuevo)
+    -- UFO MONEY
     if Config.Targets.UFO then 
         local f=workspace:FindFirstChild("UFOEventParts") 
         if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end 
@@ -204,19 +206,42 @@ local function GetTarget()
     return c
 end
 
--- --- [ INTERFAZ ] ---
-local Section = FarmTab:Section({ Title = "🔥 VORTEX v29 (UFO EDITION)" })
+-- --- [ INTERFAZ SIMPLE ] ---
+local Section = FarmTab:Section({ Title = "⚡ VORTEX AUTO-FARM" })
 
-Section:Toggle({ Title = "ACTIVAR", Callback = function(s) Config.Enabled = s; if s then Collected = 0; Notify("Farm Iniciado") end end })
-Section:Toggle({ Title = "Modo Debug", Default = true, Callback = function(s) Config.DebugMode = s end })
+Section:Toggle({ 
+    Title = "🔥 ACTIVAR FARM", 
+    Callback = function(s) 
+        Config.Enabled = s
+        
+        -- AL ACTIVAR:
+        if s then 
+            Collected = 0
+            Notify("Farm Iniciado") 
+        
+        -- AL DESACTIVAR: (FIX NOCLIP)
+        else
+            if CurTween then CurTween:Cancel() end
+            IsFlying = false
+            -- Restaurar físicas inmediatamente
+            if LocalPlayer.Character then
+                for _,p in pairs(LocalPlayer.Character:GetDescendants()) do
+                    if p:IsA("BasePart") then p.CanCollide = true end
+                end
+                if GetRoot() then GetRoot().Velocity = Vector3.zero end
+            end
+        end
+    end 
+})
+
+Section:Toggle({ Title = "Notificaciones Debug", Default = false, Callback = function(s) Config.DebugMode = s end })
 
 Section:Slider({ Title = "Rango Detector Tsunami", Value = { Min = 200, Max = 500, Default = 300 }, Callback = function(v) Config.TsunamiRange = v end })
-Section:Button({ Title = "🗑️ Limpiar Memoria", Callback = function() Processed = {}; Collected = 0 end })
 
 Section:Toggle({ Title = "Tickets", Callback = function(s) Config.Targets.Tickets = s end })
 Section:Toggle({ Title = "Consolas", Callback = function(s) Config.Targets.Consoles = s end })
 Section:Toggle({ Title = "Dinero", Callback = function(s) Config.Targets.Money = s end })
-Section:Toggle({ Title = "UFO Money 👽", Callback = function(s) Config.Targets.UFO = s end }) -- Nuevo Toggle
+Section:Toggle({ Title = "UFO Money 👽", Callback = function(s) Config.Targets.UFO = s end })
 
 Section:Toggle({ Title = "Lucky Blocks", Callback = function(s) Config.Targets.LuckyBlocks = s end })
 Section:Dropdown({ Title = "Filtro Lucky", Multi = true, Values = GetNames("LuckyBlocks"), Callback = function(v) Config.Sel.Lucky = v end })
