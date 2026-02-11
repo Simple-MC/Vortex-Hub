@@ -1,9 +1,12 @@
 --[[
     MODULE: VORTEX AUTO-FARM v30 (CLEAN & STABLE)
-    FIXES:
-    1. NoClip se desactiva al apagar el Farm (Physics Restore).
-    2. Notificaciones Debug desactivadas por defecto.
-    3. UI limpia sin botones innecesarios.
+FIXES:
+
+1. NoClip is disabled when the Farm is shut down (Physics Restore).
+
+2. Debug notifications are disabled by default.
+
+3. Clean UI without buttons
 ]]
 
 local Players = game:GetService("Players")
@@ -17,7 +20,7 @@ local StarterGui = game:GetService("StarterGui")
 local FarmTab = _G.AutoFarmTab
 local t = 0
 while not FarmTab and t < 5 do task.wait(0.1); t=t+0.1; FarmTab = _G.AutoFarmTab end
-if not FarmTab then warn("❌ AutoFarmTab no cargó"); return end
+if not FarmTab then warn("❌ AutoFarmTab did not load"); return end
 
 -- --- [ CONFIGURACIÓN ] ---
 local HomeCF = CFrame.new(136.92, 3.11, -9.24) + Vector3.new(0, 3, 0)
@@ -210,14 +213,14 @@ end
 local Section = FarmTab:Section({ Title = "⚡ VORTEX AUTO-FARM" })
 
 Section:Toggle({ 
-    Title = "🔥 ACTIVAR FARM", 
+    Title = "🔥 ACTIVATE FARMING", 
     Callback = function(s) 
         Config.Enabled = s
         
         -- AL ACTIVAR:
         if s then 
             Collected = 0
-            Notify("Farm Iniciado") 
+            Notify("ACTIVATE FARMING") 
         
         -- AL DESACTIVAR: (FIX NOCLIP)
         else
@@ -234,20 +237,20 @@ Section:Toggle({
     end 
 })
 
-Section:Toggle({ Title = "Notificaciones Debug", Default = false, Callback = function(s) Config.DebugMode = s end })
+Section:Toggle({ Title = "Debug Notifications", Default = false, Callback = function(s) Config.DebugMode = s end })
 
-Section:Slider({ Title = "Rango Detector Tsunami", Value = { Min = 200, Max = 500, Default = 300 }, Callback = function(v) Config.TsunamiRange = v end })
+Section:Slider({ Title = "Tsunami Detector Range", Value = { Min = 200, Max = 500, Default = 300 }, Callback = function(v) Config.TsunamiRange = v end })
 
-Section:Toggle({ Title = "Tickets", Callback = function(s) Config.Targets.Tickets = s end })
-Section:Toggle({ Title = "Consolas", Callback = function(s) Config.Targets.Consoles = s end })
-Section:Toggle({ Title = "Dinero", Callback = function(s) Config.Targets.Money = s end })
+Section:Toggle({ Title = "Tickets 🎫", Callback = function(s) Config.Targets.Tickets = s end })
+Section:Toggle({ Title = "Consoles 🎮", Callback = function(s) Config.Targets.Consoles = s end })
+Section:Toggle({ Title = "Gold Money 🪙", Callback = function(s) Config.Targets.Money = s end })
 Section:Toggle({ Title = "UFO Money 👽", Callback = function(s) Config.Targets.UFO = s end })
 
 Section:Toggle({ Title = "Lucky Blocks", Callback = function(s) Config.Targets.LuckyBlocks = s end })
-Section:Dropdown({ Title = "Filtro Lucky", Multi = true, Values = GetNames("LuckyBlocks"), Callback = function(v) Config.Sel.Lucky = v end })
+Section:Dropdown({ Title = "Lucky Filter", Multi = true, Values = GetNames("LuckyBlocks"), Callback = function(v) Config.Sel.Lucky = v end })
 
 Section:Toggle({ Title = "Brainrots", Callback = function(s) Config.Targets.Brainrots = s end })
-Section:Dropdown({ Title = "Filtro Brainrot", Multi = true, Values = GetNames("Brainrots"), Callback = function(v) Config.Sel.Brain = v end })
+Section:Dropdown({ Title = "Brainrot Filter", Multi = true, Values = GetNames("Brainrots"), Callback = function(v) Config.Sel.Brain = v end })
 
 -- --- [ LOOP FÍSICO ] ---
 RunService.Stepped:Connect(function()
@@ -277,19 +280,19 @@ task.spawn(function()
                     end
 
                     if isPanic then
-                        Notify("⚠️ PELIGRO! Refugiándose...")
+                        Notify("⚠️ Danger! Going to Safe Zone ...")
                         local SafeSpot = GetSafe()
                         FlyTo(SafeSpot, true) 
                         task.wait(0.2)
                         
                     elseif Collected >= MaxInv then
-                        Notify("🎒 Lleno. Volviendo...")
+                        Notify("🎒 Maximum Inventory...")
                         FlyTo(HomeCF, true)
                         if (root.Position - HomeCF.Position).Magnitude < 10 then
                             task.wait(1.5)
                             Collected = 0
                             Processed = {}
-                            Notify("✅ Listo.")
+                            Notify("✅ Ready.")
                         end
                         
                     else
@@ -306,7 +309,7 @@ task.spawn(function()
                                 if Prompt then
                                     local distActual = (root.Position - MovePart.Position).Magnitude
                                     if distActual <= (Prompt.MaxActivationDistance + 3) then
-                                        Notify("⚡ Recogiendo...")
+                                        Notify("⚡ collecting...")
                                         Prompt.RequiresLineOfSight = false
                                         Prompt.HoldDuration = 0
                                         for i = 1, 15 do fireproximityprompt(Prompt) end
