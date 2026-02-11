@@ -1,99 +1,151 @@
 --[[ MODULE: COMBAT (GOD MODE & BORDERS) ]]
 
-local Section = _G.CombatTab:Section({ Title = "Supervivencia y Mapa" })
-local Trash = game:GetService("Lighting") -- Almacén temporal
-local SavedParents = {}
-local SavedMud = {}
-local ActiveBorders = {}
+local Section = _G.CombatTab:Section({ Title = "Supervivencia y Mapas" })
 
--- Configuración de Bordes (Tus CFrames exactos)
-local BorderConfig = {
-    {s=Vector3.new(90, 2.7, 2048), c=CFrame.new(1177, 0, -143)},
-    {s=Vector3.new(90, 2.7, 2048), c=CFrame.new(1917, 0, -143)},
-    {s=Vector3.new(4, 13, 2048), c=CFrame.new(1177, -2, -136)},
-    {s=Vector3.new(4, 13, 2048), c=CFrame.new(1917, -2, -136)},
-    {s=Vector3.new(4, 13, 2048), c=CFrame.new(1177, -2, 136)},
-    {s=Vector3.new(90, 2.7, 2048), c=CFrame.new(1179, 0, 143.5)},
-    {s=Vector3.new(4, 13, 2048), c=CFrame.new(1917, -2, 135.5)},
-    {s=Vector3.new(90, 2.7, 2048), c=CFrame.new(1917, 0, 144)},
-    {s=Vector3.new(6, 90, 284), c=CFrame.new(2938, 0, 0)}
+local AlmacenTemporal = game:GetService("Lighting")
+local GodModeEnabled = false
+local OriginalParents = {}
+local OriginalMudData = {}
+local ActiveBorders = {} -- Lista para guardar las partes creadas
+
+-- Configuración EXACTA de tus bordes (No toqué ni un número)
+local configBordes = {
+    {nombre = "B1", size = Vector3.new(90, 2.7, 2048), cf = CFrame.new(1177, 0, -143, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "B2", size = Vector3.new(90, 2.7, 2048), cf = CFrame.new(1917, 0, -143, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "B3", size = Vector3.new(4, 13, 2048), cf = CFrame.new(1177, -2, -136, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "B4", size = Vector3.new(4, 13, 2048), cf = CFrame.new(1917, -2, -136, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "Borde5", size = Vector3.new(4, 13, 2048), cf = CFrame.new(1177, -2, 136, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "Borde6", size = Vector3.new(90, 2.7, 2048), cf = CFrame.new(1179, 0, 143.5, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "Borde7", size = Vector3.new(4, 13, 2048), cf = CFrame.new(1917, -2, 135.5, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "Borde8", size = Vector3.new(90, 2.7, 2048), cf = CFrame.new(1917, 0, 144, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "Borde9", size = Vector3.new(6, 90, 284), cf = CFrame.new(2938, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)}
 }
 
-local function MoveToTrash(obj)
-    if obj and obj.Parent ~= Trash then
-        SavedParents[obj] = obj.Parent
-        obj.Parent = Trash
+-- Función segura para mover objetos
+local function SafeMove(obj, newParent)
+    if obj and obj.Parent ~= newParent then
+        if not OriginalParents[obj] then
+            OriginalParents[obj] = obj.Parent
+        end
+        obj.Parent = newParent
     end
 end
 
-local function RestoreMap()
-    for obj, parent in pairs(SavedParents) do pcall(function() obj.Parent = parent end) end
-    for obj, data in pairs(SavedMud) do 
-        pcall(function() obj.Size = data.s; obj.CFrame = data.c end) 
+-- Función para restaurar todo
+local function RestoreAll()
+    -- Restaurar padres
+    for obj, parent in pairs(OriginalParents) do
+        pcall(function()
+            if obj then obj.Parent = parent end
+        end)
     end
-    SavedParents, SavedMud = {}, {}
-    for _, b in pairs(ActiveBorders) do b:Destroy() end
+    OriginalParents = {}
+    
+    -- Restaurar Lodo
+    for obj, data in pairs(OriginalMudData) do
+        pcall(function()
+            if obj then
+                obj.Size = data.Size
+                obj.CFrame = data.CFrame
+            end
+        end)
+    end
+    OriginalMudData = {}
+
+    -- Destruir Bordes
+    for _, part in pairs(ActiveBorders) do
+        if part then part:Destroy() end
+    end
     ActiveBorders = {}
 end
 
-local GodMode = false
 Section:Toggle({
-    Title = "🛡️ Activar God Mode (Map Bypass)",
+    Title = "🛡️ Activar God Mode (Bordes + Clean)",
     Callback = function(state)
-        GodMode = state
-        if not state then RestoreMap() return end
-
-        -- 1. CREAR BORDES
-        for i, d in ipairs(BorderConfig) do
-            local p = Instance.new("Part", workspace)
-            p.Name = "VortexBorder_"..i; p.Size = d.s; p.CFrame = d.c
-            p.Anchored = true; p.Transparency = 0.5; p.Color = Color3.fromRGB(255, 50, 50)
-            p.Material = Enum.Material.Neon
-            table.insert(ActiveBorders, p)
-        end
-
-        -- 2. BUCLE DE LIMPIEZA
-        task.spawn(function()
-            while GodMode do
-                pcall(function()
-                    local W = workspace
-                    -- Limpieza General de Mapas
-                    MoveToTrash(W:FindFirstChild("ArcadeMap") and W.ArcadeMap:FindFirstChild("RightWalls"))
-                    MoveToTrash(W:FindFirstChild("RadioactiveMap") and W.RadioactiveMap:FindFirstChild("RightWalls"))
-                    MoveToTrash(W:FindFirstChild("DefaultMap") and W.DefaultMap:FindFirstChild("RightWalls"))
-                    
-                    if W:FindFirstChild("MarsMap") and W.MarsMap:FindFirstChild("Walls") then
-                        MoveToTrash(W.MarsMap.Walls:GetChildren()[7]) -- Pared específica
-                    end
-                    
-                    if W:FindFirstChild("MoneyMap") then
-                        MoveToTrash(W.MoneyMap.DefaultStudioMap.Walls)
-                        MoveToTrash(W.MoneyMap.DefaultStudioMap.RightWalls)
-                    end
-
-                    -- Modificación Especial de Lodo (Mud)
-                    local DM = W:FindFirstChild("DefaultMap")
-                    if DM and DM:FindFirstChild("Walls") then
-                        local walls = DM.Walls:GetChildren()
-                        MoveToTrash(DM.Walls:FindFirstChild("wall"))
-                        if walls[6] then MoveToTrash(walls[6]) end
-
-                        -- Ajustar Lodos (Mud 3 y 4)
-                        local m1, m2 = walls[3] and walls[3]:FindFirstChild("Mud"), walls[4] and walls[4]:FindFirstChild("Mud")
-                        
-                        if m1 then
-                            if not SavedMud[m1] then SavedMud[m1] = {s=m1.Size, c=m1.CFrame} end
-                            m1.CFrame = CFrame.new(156, 50, -164) * CFrame.Angles(0, -1.57, -1.57)
-                        end
-                        if m2 then
-                            if not SavedMud[m2] then SavedMud[m2] = {s=m2.Size, c=m2.CFrame} end
-                            m2.Size = Vector3.new(100, 33, 6)
-                            m2.CFrame = CFrame.new(156, 50, 159.1) * CFrame.Angles(0, -1.57, -1.57)
-                        end
-                    end
-                end)
-                task.wait(0.5) -- Revisión cada medio segundo
+        GodModeEnabled = state
+        
+        if state then
+            -- 1. CREAR BORDES INMEDIATAMENTE
+            for _, d in ipairs(configBordes) do
+                local p = Instance.new("Part", workspace)
+                p.Name = d.nombre
+                p.Size = d.size
+                p.CFrame = d.cf
+                p.Anchored = true
+                p.CanCollide = true
+                p.Color = Color3.fromRGB(255, 0, 0)
+                p.Material = Enum.Material.Neon
+                p.Transparency = 0.5
+                table.insert(ActiveBorders, p) -- Guardar en lista para borrar luego
             end
-        end)
+
+            -- 2. BUCLE PARA MOVER COSAS (Clean Map)
+            task.spawn(function()
+                while GodModeEnabled do
+                    pcall(function()
+                        local W = workspace
+                        
+                        -- Arcade Map
+                        if W:FindFirstChild("ArcadeMap") then
+                            SafeMove(W.ArcadeMap:FindFirstChild("RightWalls"), AlmacenTemporal)
+                        end
+                        
+                        -- Radioactive Map
+                        if W:FindFirstChild("RadioactiveMap") then
+                            SafeMove(W.RadioactiveMap:FindFirstChild("RightWalls"), AlmacenTemporal)
+                        end
+                        
+                        -- Mars Map
+                        if W:FindFirstChild("MarsMap") and W.MarsMap:FindFirstChild("Walls") then
+                            -- Usa el índice 7 como pediste
+                            local children = W.MarsMap.Walls:GetChildren()
+                            if children[7] then SafeMove(children[7], AlmacenTemporal) end
+                        end
+                        
+                        -- Money Map
+                        if W:FindFirstChild("MoneyMap") and W.MoneyMap:FindFirstChild("DefaultStudioMap") then
+                            SafeMove(W.MoneyMap.DefaultStudioMap:FindFirstChild("Walls"), AlmacenTemporal)
+                            SafeMove(W.MoneyMap.DefaultStudioMap:FindFirstChild("RightWalls"), AlmacenTemporal)
+                        end
+                        
+                        -- Default Map & Misc
+                        if W:FindFirstChild("DefaultMap") then
+                            SafeMove(W.DefaultMap:FindFirstChild("RightWalls"), AlmacenTemporal)
+                        end
+                        if W:FindFirstChild("Misc") then
+                            SafeMove(W.Misc:FindFirstChild("BrickAddition"), AlmacenTemporal)
+                        end
+
+                        -- Lógica del Lodo (Mud) y Muros extra
+                        local dMap = W:FindFirstChild("DefaultMap")
+                        if dMap and dMap:FindFirstChild("Walls") then
+                            local w = dMap.Walls
+                            local c = w:GetChildren()
+                            
+                            if w:FindFirstChild("wall") then SafeMove(w.wall, AlmacenTemporal) end
+                            if c[6] then SafeMove(c[6], AlmacenTemporal) end
+
+                            -- Mud 1 (c[3])
+                            if c[3] and c[3]:FindFirstChild("Mud") then
+                                local m = c[3].Mud
+                                if not OriginalMudData[m] then OriginalMudData[m] = {Size = m.Size, CFrame = m.CFrame} end
+                                m.CFrame = CFrame.new(156, 50, -164) * CFrame.Angles(0, -1.57, -1.57)
+                            end
+                            
+                            -- Mud 2 (c[4])
+                            if c[4] and c[4]:FindFirstChild("Mud") then
+                                local m = c[4].Mud
+                                if not OriginalMudData[m] then OriginalMudData[m] = {Size = m.Size, CFrame = m.CFrame} end
+                                m.Size = Vector3.new(100, 33, 6)
+                                m.CFrame = CFrame.new(156, 50, 159.1) * CFrame.Angles(0, -1.57, -1.57)
+                            end
+                        end
+                    end)
+                    task.wait(0.5)
+                end
+            end)
+        else
+            RestoreAll()
+        end
     end
 })
