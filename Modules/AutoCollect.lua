@@ -1,9 +1,8 @@
 --[[
-    MODULE: VORTEX AUTO-FARM v27 (SURVIVAL & GRAVITY FIX)
-    LOGIC:
-    1. Gravedad: SafeZones +3 studs de altura (evita hundirse).
-    2. Prioridad Absoluta: Si hay ola, NO busca objetivos.
-    3. Cancelación: Aborta recolección si aparece peligro a mitad de camino.
+    MODULE: VORTEX AUTO-FARM v28 (PHYSICS FIX)
+    FIXES:
+    1. Vuelo de Pánico IMPARABLE (ya no se cancela a sí mismo).
+    2. Gravedad Normal: Solo congela fisicas mientras vuela, no todo el tiempo.
 ]]
 
 local Players = game:GetService("Players")
@@ -20,7 +19,7 @@ while not FarmTab and t < 5 do task.wait(0.1); t=t+0.1; FarmTab = _G.AutoFarmTab
 if not FarmTab then warn("❌ AutoFarmTab no cargó"); return end
 
 -- --- [ CONFIGURACIÓN ] ---
-local HomeCF = CFrame.new(136.92, 3.11, -9.24) + Vector3.new(0, 3, 0) -- Altura corregida
+local HomeCF = CFrame.new(136.92, 3.11, -9.24) + Vector3.new(0, 3, 0)
 local Collected = 0
 local MaxInv = 3
 local Processed = {} 
@@ -34,7 +33,7 @@ local Config = {
     Sel = { Lucky = {}, Brain = {} }
 }
 
--- --- [ ZONAS SEGURAS (CORREGIDAS +3 STUDS) ] ---
+-- --- [ ZONAS SEGURAS (+3 STUDS) ] ---
 local SafeZones = {
     HomeCF,
     CFrame.new(199.82, -6.38, -4.25) + Vector3.new(0, 3, 0),
@@ -65,9 +64,12 @@ end
 
 local function GetRoot() return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") end
 
--- --- [ VUELO ] ---
+-- --- [ VUELO MEJORADO ] ---
 local CurTween = nil
-local function FlyTo(TargetCF)
+local IsFlying = false -- Variable para controlar las físicas
+
+-- Parametro 'Emergency': Si es true, NADA detiene este vuelo (para huir)
+local function FlyTo(TargetCF, Emergency)
     local root = GetRoot()
     if not root then return end
     
@@ -75,28 +77,29 @@ local function FlyTo(TargetCF)
     local Time = Dist / Config.Speed
     
     if CurTween then CurTween:Cancel() end
+    
+    IsFlying = true -- Activamos modo antigravedad
     CurTween = TweenService:Create(root, TweenInfo.new(Time, Enum.EasingStyle.Linear), {CFrame = TargetCF})
     CurTween:Play()
     
-    -- Bucle de espera con chequeo de emergencia
     local e = 0
     while e < Time do
         if not GetRoot() or not Config.Enabled then 
             if CurTween then CurTween:Cancel() end 
+            IsFlying = false
             return 
         end
         
-        -- CHEQUEO DE EMERGENCIA EN PLENO VUELO
-        -- Si estamos volando a recolectar pero aparece un tsunami, CANCELAR
-        if Config.Enabled then
+        -- SOLO cancelamos si NO es una emergencia (si estamos farmeando)
+        if not Emergency and Config.Enabled then
              local folder = workspace:FindFirstChild("ActiveTsunamis")
              if folder then
                 for _, w in pairs(folder:GetChildren()) do
                     local p = w:IsA("BasePart") and w or w:FindFirstChildWhichIsA("BasePart", true)
                     if p and (root.Position - p.Position).Magnitude < Config.TsunamiRange then
-                        -- ¡PELIGRO DETECTADO EN VUELO!
                         if CurTween then CurTween:Cancel() end
-                        return -- Rompe el vuelo actual para que el bucle principal tome control
+                        IsFlying = false
+                        return -- Cancelar vuelo para huir
                     end
                 end
              end
@@ -104,7 +107,10 @@ local function FlyTo(TargetCF)
 
         task.wait(0.05); e=e+0.05
     end
-    CurTween = nil; if GetRoot() then root.Velocity = Vector3.zero end
+    
+    CurTween = nil
+    IsFlying = false -- Desactivamos modo antigravedad al llegar
+    if GetRoot() then root.Velocity = Vector3.zero end
 end
 
 -- --- [ SUPERVIVENCIA ] ---
@@ -196,7 +202,7 @@ local function GetTarget()
 end
 
 -- --- [ INTERFAZ ] ---
-local Section = FarmTab:Section({ Title = "🔥 VORTEX v27 (SURVIVAL)" })
+local Section = FarmTab:Section({ Title = "🔥 VORTEX v28 (PHYSICS FIX)" })
 
 Section:Toggle({ Title = "ACTIVAR", Callback = function(s) Config.Enabled = s; if s then Collected = 0; Notify("Farm Iniciado") end end })
 Section:Toggle({ Title = "Modo Debug", Default = true, Callback = function(s) Config.DebugMode = s end })
@@ -214,14 +220,16 @@ Section:Dropdown({ Title = "Filtro Lucky", Multi = true, Values = GetNames("Luck
 Section:Toggle({ Title = "Brainrots", Callback = function(s) Config.Targets.Brainrots = s end })
 Section:Dropdown({ Title = "Filtro Brainrot", Multi = true, Values = GetNames("Brainrots"), Callback = function(v) Config.Sel.Brain = v end })
 
--- --- [ LOOP PRINCIPAL ] ---
+-- --- [ LOOP FÍSICO (SOLO CUANDO VUELA) ] ---
 RunService.Stepped:Connect(function()
-    if Config.Enabled and LocalPlayer.Character then
+    if Config.Enabled and LocalPlayer.Character and IsFlying then
+        -- Solo quitamos colisiones y gravedad SI ESTAMOS VOLANDO
         for _,p in pairs(LocalPlayer.Character:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide=false end end
         if GetRoot() then GetRoot().Velocity = Vector3.zero end
     end
 end)
 
+-- --- [ LOOP PRINCIPAL ] ---
 task.spawn(function()
     while true do
         pcall(function()
@@ -229,7 +237,6 @@ task.spawn(function()
                 local root = GetRoot()
                 if root and LocalPlayer.Character.Humanoid.Health > 0 then
                     
-                    -- 1. DETECTAR PELIGRO (PRIORIDAD ABSOLUTA)
                     local isPanic = false
                     local folder = workspace:FindFirstChild("ActiveTsunamis")
                     if folder then
@@ -242,43 +249,36 @@ task.spawn(function()
                     end
 
                     if isPanic then
-                        -- >>> MODO PÁNICO <<<
-                        -- NO buscamos targets, NO depositamos. SOLO corremos.
                         Notify("⚠️ PELIGRO! Refugiándose...")
                         local SafeSpot = GetSafe()
-                        FlyTo(SafeSpot) 
-                        task.wait(0.2) -- Reaccionar rápido
+                        FlyTo(SafeSpot, true) -- TRUE = Emergencia (No cancelar)
+                        task.wait(0.2)
                         
                     elseif Collected >= MaxInv then
-                        -- >>> MODO DEPOSITAR <<<
-                        Notify("🎒 Inventario Lleno. Volviendo...")
-                        FlyTo(HomeCF)
+                        Notify("🎒 Lleno. Volviendo...")
+                        FlyTo(HomeCF, true) -- TRUE = Volver a casa es seguro
                         if (root.Position - HomeCF.Position).Magnitude < 10 then
                             task.wait(1.5)
                             Collected = 0
                             Processed = {}
-                            Notify("✅ Limpio. A trabajar.")
+                            Notify("✅ Listo.")
                         end
                         
                     else
-                        -- >>> MODO RECOLECCIÓN <<<
-                        -- Solo entramos aquí si NO hay peligro y NO estamos llenos
                         local Target = GetTarget()
                         if Target then
                             local Prompt = Target:FindFirstChildWhichIsA("ProximityPrompt", true)
                             local MovePart = Prompt and Prompt.Parent or Target:FindFirstChild("Root") or Target.PrimaryPart or Target:FindFirstChildWhichIsA("BasePart", true)
 
                             if MovePart then
-                                -- Moverse al objetivo
                                 if (root.Position - MovePart.Position).Magnitude > 2 then 
-                                    FlyTo(MovePart.CFrame) 
+                                    FlyTo(MovePart.CFrame, false) -- FALSE = Recolección (Cancelable)
                                 end
                                 
-                                -- Recoger (Turbo Proxy)
                                 if Prompt then
                                     local distActual = (root.Position - MovePart.Position).Magnitude
                                     if distActual <= (Prompt.MaxActivationDistance + 3) then
-                                        Notify("⚡ Recogiendo " .. Target.Name)
+                                        Notify("⚡ Recogiendo...")
                                         Prompt.RequiresLineOfSight = false
                                         Prompt.HoldDuration = 0
                                         for i = 1, 15 do fireproximityprompt(Prompt) end
