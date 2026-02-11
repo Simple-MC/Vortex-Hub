@@ -7,7 +7,7 @@ local Window = WindUI:CreateWindow({
     Author = "Simple-MC",
     Folder = "VortexConfig",      
     BackgroundImageTransparency = 0.42,
-    Background = "rbxassetid://114764180805798"
+    Background = "rbxassetid://107940860934147"
 })
 
 local function LoadModule(name)
