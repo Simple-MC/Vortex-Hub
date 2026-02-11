@@ -8,7 +8,7 @@
 <table align="center" width="100%" style="border: none;">
 <tr>
 <td width="33%" align="center" valign="top" style="border: none;">
-<img src="https://www.google.com/search?q=https://img.icons8.com/nolan/64/bot.png" width="50">
+<img src="https://www.google.com/search?q=https://www.google.com/search?q=https://img.icons8.com/nolan/64/bot.png" width="50">
 <h3><b>SMART AUTOMATION</b></h3>
 <p align="left">
 <b>• Turbo-Proxy:</b> Instant interaction protocol (0ms delay).
@@ -42,6 +42,17 @@
 </td>
 </tr>
 </table>
+
+<h2 align="center">🚀 EXECUTE VORTEX</h2>
+<div align="center">
+    <img src="https://img.shields.io/badge/CLICK_TO_COPY_SCRIPT-00BFA5?style=for-the-badge&logo=lua&logoColor=white" alt="Copy Script Button">
+    <p>Use the code block below in any supported executor:</p>
+</div>
+
+
+loadstring(game:HttpGet("https://raw.githubusercontent.com/VortexAI/VortexHub/main/Vortex.lua"))()
+
+
 <h2 align="center">📜 VORTEX CHRONICLES</h2>
 <div align="center"><i>Comprehensive development log and update history.</i></div>
 
