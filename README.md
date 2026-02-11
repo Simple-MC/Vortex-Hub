@@ -1,70 +1,41 @@
 <div align="center">
 
-<!-- TÍTULO ANIMADO TIPO TERMINAL -->
-<a href="https://github.com/Simple-MC/Vortex-Hub">
-  <img src="https://readme-typing-svg.herokuapp.com?font=JetBrains+Mono&weight=700&size=30&duration=4000&pause=1000&color=A913F7&center=true&vCenter=true&width=500&lines=VORTEX+HUB+v31;ULTIMATE+AUTOMATION+SUITE;ESCAPE+TSUNAMI+GOD;DEVELOPED+BY+DANIEL" alt="Typing SVG" />
-</a>
 
-<br>
-
-<!-- BADGES DE ESTATUS ESTILO "CHIP" -->
-<img src="https://img.shields.io/badge/VERSION-v31.0_STABLE-7209b7?style=flat&logo=rocket&logoColor=white" alt="Version">
-<img src="https://img.shields.io/badge/STATUS-UNDETECTED-success?style=flat&logo=security&logoColor=white" alt="Status">
-<img src="https://img.shields.io/badge/PLATFORM-WIN_/_ANDROID-0077b6?style=flat&logo=windows&logoColor=white" alt="Platform">
-<img src="https://img.shields.io/badge/UPDATED-YES-orange?style=flat" alt="Maintained">
-
+<img src="https://www.google.com/search?q=https://img.shields.io/badge/SUPPORTED_EXECUTORS-WAVE_|SOLARA|ARCEUS|_DELTA-1a1a1a?style=flat-square" alt="Executors">
 </div>
-
-<br>
-
----
-
-<div align="center">
-  <h2>📥 SYSTEM INJECTION</h2>
-  <p><i>Copy the loadstring below and execute it.</i></p>
-</div>
-
-<!-- CUADRO DE CÓDIGO (Importante: Dejar espacios en blanco antes y después) -->
-
-```lua
-loadstring(game:HttpGet("[https://raw.githubusercontent.com/Simple-MC/Vortex-Hub/main/Main.lua](https://raw.githubusercontent.com/Simple-MC/Vortex-Hub/main/Main.lua)"))()
-
-<div align="center">
-<img src="https://img.shields.io/badge/SUPPORTED-SOLARA_|_WAVE_|_DELTA_|_ARCEUS-1a1a1a?style=flat-square" alt="Executors">
-</div>
-<h2 align="center">⚡ CORE MODULES</h2>
-<!-- GRID DE CARACTERÍSTICAS (Diseño limpio sin bordes visibles) -->
+<h2 align="center">⚡ CORE ARCHITECTURE</h2>
+<!-- GRID DE CARACTERÍSTICAS (TABLA HTML INVISIBLE) -->
 <table align="center" width="100%" style="border: none;">
 <tr>
 <td width="33%" align="center" valign="top" style="border: none;">
-<img src="https://img.icons8.com/external-smashingstocks-flat-smashing-stocks/64/external-Optimization-seo-and-marketing-smashingstocks-flat-smashing-stocks.png" width="40">
-<h3>SMART FARM</h3>
+<img src="https://www.google.com/search?q=https://img.icons8.com/nolan/64/bot.png" width="50">
+<h3><b>SMART AUTOMATION</b></h3>
 <p align="left">
-<b>• Turbo-Proxy:</b> 0ms delay interaction protocol.
+<b>• Turbo-Proxy:</b> Instant interaction protocol (0ms delay).
 
 <b>• Deep Search:</b> Scans nested folders (Brainrots/Lucky).
 
-<b>• UFO Event:</b> Fully automated Alien Coin farmer.
+<b>• UFO Event:</b> Automated Alien Coin farming logic.
 </p>
 </td>
 <td width="33%" align="center" valign="top" style="border: none;">
-<img src="https://img.icons8.com/external-flaticons-flat-flat-icons/64/external-shield-web-development-flaticons-flat-flat-icons.png" width="40">
-<h3>SURVIVAL ENGINE</h3>
+<img src="https://www.google.com/search?q=https://img.icons8.com/nolan/64/security-shield.png" width="50">
+<h3><b>SURVIVAL ENGINE</b></h3>
 <p align="left">
 <b>• Panic Mode v2:</b> Prioritizes survival over loot.
 
-<b>• Path Analysis:</b> Predicts and avoids wave trajectory.
+<b>• Path Analysis:</b> Predictive algorithm to avoid tsunami.
 
-<b>• Gravity Fix:</b> Auto-offsets height (+3 studs).
+<b>• Gravity Fix:</b> Auto-offsets character height (+3 studs).
 </p>
 </td>
 <td width="33%" align="center" valign="top" style="border: none;">
-<img src="https://img.icons8.com/external-flaticons-flat-flat-icons/64/external-crown-gamification-flaticons-flat-flat-icons-2.png" width="40">
-<h3>GOD SYSTEMS</h3>
+<img src="https://www.google.com/search?q=https://img.icons8.com/nolan/64/crown.png" width="50">
+<h3><b>GOD SYSTEMS</b></h3>
 <p align="left">
-<b>• Map Bypass:</b> Deletes physical barriers (Mars/Arcade).
+<b>• Map Bypass:</b> Removes Mars/Arcade physical barriers.
 
-<b>• VIP Injection:</b> Grants client-side VIP access.
+<b>• VIP Injection:</b> Client-side access to VIP areas.
 
 <b>• Physics Restore:</b> Auto-fixes gravity after flight.
 </p>
@@ -72,95 +43,98 @@ loadstring(game:HttpGet("[https://raw.githubusercontent.com/Simple-MC/Vortex-Hub
 </tr>
 </table>
 <h2 align="center">📜 VORTEX CHRONICLES</h2>
-<p align="center"><i>Full development history log.</i></p>
-<div align="center">
-<table width="90%">
+<div align="center"><i>Comprehensive development log and update history.</i></div>
+
+
+<table align="center" width="100%">
 <thead>
 <tr>
 <th align="center" width="10%">VER</th>
-<th align="center" width="15%">TAG</th>
-<th align="left">CHANGE LOG</th>
+<th align="center" width="15%">TYPE</th>
+<th align="left">CHANGE LOG DETAILS</th>
 </tr>
 </thead>
 <tbody>
-<!-- ULTIMATE PHASE -->
+<!-- PHASE 5 -->
 <tr>
 <td align="center"><code>v31.0</code></td>
-<td align="center"><img src="https://img.shields.io/badge/RELEASE-00C853?style=flat-square"></td>
-<td><b>FINAL BUILD:</b> Merged all modules. Optimized FPS. Stable.</td>
+<td align="center"><img src="https://www.google.com/search?q=https://img.shields.io/badge/RELEASE-00C853%3Fstyle%3Dflat-square"></td>
+<td><b>FINAL BUILD:</b> Merged all systems. Optimized FPS. Stable.</td>
 </tr>
 <tr>
 <td align="center"><code>v30.5</code></td>
-<td align="center"><img src="https://img.shields.io/badge/SYSTEM-7B1FA2?style=flat-square"></td>
-<td><b>OLED SAVER:</b> Black Screen Mode for battery saving.</td>
+<td align="center"><img src="https://www.google.com/search?q=https://img.shields.io/badge/SYSTEM-7B1FA2%3Fstyle%3Dflat-square"></td>
+<td><b>OLED SAVER:</b> Added "Black Screen Mode" for battery saving.</td>
 </tr>
 <tr>
 <td align="center"><code>v29.0</code></td>
-<td align="center"><img src="https://img.shields.io/badge/CORE-304FFE?style=flat-square"></td>
-<td><b>GOD MODE:</b> Merged into Auto-Collect core.</td>
+<td align="center"><img src="https://www.google.com/search?q=https://img.shields.io/badge/CORE-304FFE%3Fstyle%3Dflat-square"></td>
+<td><b>GOD MODE:</b> Merged God Mode logic into Auto-Collect core.</td>
 </tr>
 <tr>
 <td align="center"><code>v26.0</code></td>
-<td align="center"><img src="https://img.shields.io/badge/EVENT-FFD600?style=flat-square&logoColor=black"></td>
+<td align="center"><img src="https://www.google.com/search?q=https://img.shields.io/badge/EVENT-FFD600%3Fstyle%3Dflat-square%26logoColor%3Dblack"></td>
 <td><b>UFO UPDATE:</b> Full support for Alien Coins + Purple ESP.</td>
 </tr>
-<!-- REVOLUTION PHASE -->
+<!-- PHASE 4 -->
 <tr>
 <td align="center"><code>v24.0</code></td>
-<td align="center"><img src="https://img.shields.io/badge/LOGIC-00B0FF?style=flat-square"></td>
+<td align="center"><img src="https://www.google.com/search?q=https://img.shields.io/badge/LOGIC-00B0FF%3Fstyle%3Dflat-square"></td>
 <td><b>DEEP SEARCH:</b> Recursive scanner for hidden Brainrots.</td>
 </tr>
 <tr>
 <td align="center"><code>v22.0</code></td>
-<td align="center"><img src="https://img.shields.io/badge/SPEED-FF3D00?style=flat-square"></td>
-<td><b>TURBO-INTERACT:</b> Bypassed hold duration (Instant).</td>
+<td align="center"><img src="https://www.google.com/search?q=https://img.shields.io/badge/SPEED-FF3D00%3Fstyle%3Dflat-square"></td>
+<td><b>TURBO-INTERACT:</b> Bypassed hold duration for instant pickup.</td>
 </tr>
-<!-- FIX PHASE -->
+<!-- PHASE 3 -->
 <tr>
 <td align="center"><code>v17.5</code></td>
-<td align="center"><img src="https://img.shields.io/badge/PATCH-D50000?style=flat-square"></td>
-<td><b>CRITICAL:</b> Fixed terrain clipping (Floor Stuck).</td>
+<td align="center"><img src="https://www.google.com/search?q=https://img.shields.io/badge/PATCH-D50000%3Fstyle%3Dflat-square"></td>
+<td><b>CRITICAL FIX:</b> Fixed terrain clipping (Floor Stuck Glitch).</td>
 </tr>
 <tr>
 <td align="center"><code>v16.0</code></td>
-<td align="center"><img src="https://img.shields.io/badge/PATCH-D50000?style=flat-square"></td>
-<td><b>MOBILE FIX:</b> Fixed ProximityPrompts on touch.</td>
+<td align="center"><img src="https://www.google.com/search?q=https://img.shields.io/badge/PATCH-D50000%3Fstyle%3Dflat-square"></td>
+<td><b>MOBILE FIX:</b> Fixed ProximityPrompts not working on touch.</td>
 </tr>
 </tbody>
 </table>
-</div>
 <h2 align="center">⚖️ TERMS OF SERVICE</h2>
 <div align="center">
-<img src="https://img.shields.io/badge/LICENSE-PROPRIETARY_SOFTWARE-red?style=for-the-badge">
+<img src="https://www.google.com/search?q=https://img.shields.io/badge/LICENSE-PROPRIETARY-red%3Fstyle%3Dfor-the-badge">
 
 
 
 <table width="80%">
 <tr>
 <td>
-<ul>
-<li><b>1. EDUCATIONAL USE:</b> This software is designed for testing purposes.</li>
-<li><b>2. AS IS WARRANTY:</b> Provided without warranty of any kind.</li>
-<li><b>3. LIABILITY:</b> Creators are not responsible for bans.</li>
-<li><b>4. COPYRIGHT:</b> Redistribution without credit is prohibited.</li>
-</ul>
+<p>
+<b>1. EDUCATIONAL USE:</b> This software is designed for educational purposes and sandbox testing. 
+
+<b>2. AS IS WARRANTY:</b> The software is provided "as is", without warranty of any kind.
+
+<b>3. LIABILITY:</b> The creators are not responsible for account suspensions.
+
+<b>4. COPYRIGHT:</b> Redistribution of the source code without credit is prohibited.
+</p>
 </td>
 </tr>
 </table>
 </div>
 <div align="center">
 <h3>❤️ DEVELOPMENT TEAM</h3>
-<table style="border: none;">
+<table align="center" style="border: none;">
 <tr>
-<td align="center" width="150" style="border: none;">
-<img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" width="50">
+<td align="center" width="200" style="border: none;">
+<img src="https://www.google.com/search?q=https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" width="50">
 
 <b>DANIEL</b>
 
 <small>Lead Developer</small>
 </td>
-<td align="center" width="150" style="border: none;">
-<img src="https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg" width="50">
+<td align="center" width="200" style="border: none;">
+<img src="https://www.google.com/search?q=https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg" width="50">
 
 <b>GEMINI PREMIUM</b>
 
@@ -168,9 +142,8 @@ loadstring(game:HttpGet("[https://raw.githubusercontent.com/Simple-MC/Vortex-Hub
 </td>
 </tr>
 </table>
-
-
+<p>
+<img src="https://www.google.com/search?q=https://img.shields.io/badge/POWERED_BY-VORTEX_ENGINE-1a1a1a%3Fstyle%3Dfor-the-badge%26logo%3Dlua">
+</p>
 <p><b>© 2026 VORTEX HUB. ALL RIGHTS RESERVED.</b></p>
-<img src="https://img.shields.io/badge/POWERED_BY-VORTEX_ENGINE-1a1a1a?style=for-the-badge&logo=lua">
 </div>
-
