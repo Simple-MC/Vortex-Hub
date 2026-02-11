@@ -1,8 +1,9 @@
 --[[
-    MODULE: VORTEX AUTO-FARM v25 (LIFE SAVER EDITION)
-    FIX: 
-    1. Supervivencia > Recolección (Panic Mode).
-    2. HomeCF ya no es la prioridad forzada, elige la más cercana real.
+    MODULE: VORTEX AUTO-FARM v26 (FINAL FIX)
+    LOGIC:
+    1. Brainrot Scanner: Búsqueda profunda (Deep Search) en carpetas de rareza.
+    2. Smart Pathing: Evita zonas seguras bloqueadas por la ola.
+    3. Slider Tsunami: Rango ajustable (200-500).
 ]]
 
 local Players = game:GetService("Players")
@@ -28,14 +29,14 @@ local Config = {
     Enabled = false,
     DebugMode = true,
     Speed = 350, 
-    TsunamiRange = 400, -- Aumentado a 400 para reaccionar antes
+    TsunamiRange = 300, -- Valor por defecto
     Targets = { Tickets = false, Consoles = false, Money = false, LuckyBlocks = false, Brainrots = false },
     Sel = { Lucky = {}, Brain = {} }
 }
 
--- --- [ ZONAS SEGURAS (TODAS IGUALES) ] ---
+-- --- [ ZONAS SEGURAS ] ---
 local SafeZones = {
-    HomeCF, -- Solo es una opción más
+    HomeCF,
     CFrame.new(199.82, -6.38, -4.25),
     CFrame.new(285.12, -6.38, -6.46),
     CFrame.new(396.30, -6.38, -3.62),
@@ -79,55 +80,65 @@ local function FlyTo(TargetCF)
     
     local e = 0
     while e < Time do
-        -- Si estamos en modo pánico, NO cancelamos el vuelo aunque cambie el target
         if not GetRoot() or not Config.Enabled then if CurTween then CurTween:Cancel() end return end
         task.wait(0.05); e=e+0.05
     end
     CurTween = nil; if GetRoot() then root.Velocity = Vector3.zero end
 end
 
--- --- [ SUPERVIVENCIA MEJORADA ] ---
+-- --- [ SUPERVIVENCIA INTELIGENTE ] ---
+
+-- Detecta si hay una ola entre tú y el destino
+local function IsPathBlocked(StartPos, EndPos)
+    local folder = workspace:FindFirstChild("ActiveTsunamis")
+    if not folder then return false end
+    
+    for _, wave in pairs(folder:GetChildren()) do
+        local p = wave:IsA("BasePart") and wave or wave:FindFirstChildWhichIsA("BasePart", true)
+        if p then
+            -- Comprobación simple de eje X (Asumiendo que las olas se mueven en X)
+            local minX = math.min(StartPos.X, EndPos.X)
+            local maxX = math.max(StartPos.X, EndPos.X)
+            
+            -- Si la ola está "en medio" del camino
+            if p.Position.X > minX and p.Position.X < maxX then
+                return true 
+            end
+        end
+    end
+    return false
+end
+
 local function GetSafe()
     local root = GetRoot()
     if not root then return SafeZones[1] end
     
     local bestZone = nil
     local shortestDist = math.huge
-    local folder = workspace:FindFirstChild("ActiveTsunamis")
     
     for _, cf in pairs(SafeZones) do
-        local distToZone = (root.Position - cf.Position).Magnitude
-        local timeToReach = distToZone / Config.Speed
-        local isZoneRisky = false
-        
-        if folder then
-            for _, wave in pairs(folder:GetChildren()) do
-                local p = wave:IsA("BasePart") and wave or wave:FindFirstChildWhichIsA("BasePart", true)
-                if p then
-                    local realSpeed = p:GetAttribute("Speed") or 500
-                    local distWaveToZone = (p.Position - cf.Position).Magnitude
-                    local waveTTI = distWaveToZone / realSpeed
-                    
-                    -- Filtros de seguridad
-                    if distWaveToZone < 80 then isZoneRisky = true; break end -- Margen de 80 studs
-                    if waveTTI < (timeToReach + 2.0) then isZoneRisky = true; break end -- Margen de 2 segundos
-                end
-            end
-        end
-        
-        if not isZoneRisky then
-            if distToZone < shortestDist then
-                shortestDist = distToZone
+        -- 1. Verificar si el camino está bloqueado
+        if not IsPathBlocked(root.Position, cf.Position) then
+            local d = (root.Position - cf.Position).Magnitude
+            if d < shortestDist then
+                shortestDist = d
                 bestZone = cf
             end
         end
     end
     
-    -- Si no hay zona segura cercana, volar a la más lejana posible del tsunami (Lógica de emergencia)
-    return bestZone or SafeZones[#SafeZones] 
+    -- Si TODAS están bloqueadas (Pánico), vamos a la más cercana física
+    if not bestZone then
+        for _, cf in pairs(SafeZones) do
+            local d = (root.Position - cf.Position).Magnitude
+            if d < shortestDist then shortestDist = d; bestZone = cf end
+        end
+    end
+    
+    return bestZone or SafeZones[1]
 end
 
--- --- [ ESCANER ] ---
+-- --- [ ESCANER MEJORADO (DEEP SEARCH) ] ---
 local function GetTarget()
     local c, sd = nil, math.huge
     local root = GetRoot()
@@ -138,22 +149,41 @@ local function GetTarget()
     if Config.Targets.Consoles then local f=workspace:FindFirstChild("ArcadeEventConsoles") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
     if Config.Targets.Money then local f=workspace:FindFirstChild("MoneyEventParts") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
 
+    -- LUCKY BLOCKS
     if Config.Targets.LuckyBlocks then
         local f=workspace:FindFirstChild("ActiveLuckyBlocks")
-        if f then for _,obj in pairs(f:GetDescendants()) do 
-            if obj:IsA("Model") and not Processed[obj] then
-                for _,s in pairs(Config.Sel.Lucky) do if obj.Name:find(s) then table.insert(List,obj) break end end
-            end
-        end end
+        if f then 
+            -- Busca recursivamente en TODA la carpeta
+            for _,obj in pairs(f:GetDescendants()) do 
+                if obj:IsA("Model") and not Processed[obj] then
+                    -- Verifica si tiene Prompt o Root
+                    if obj:FindFirstChild("Root") or obj:FindFirstChildWhichIsA("ProximityPrompt", true) then
+                        for _,s in pairs(Config.Sel.Lucky) do if obj.Name:find(s) then table.insert(List,obj) break end end
+                    end
+                end
+            end 
+        end
     end
 
+    -- BRAINROTS (FIXED)
     if Config.Targets.Brainrots then
         local f=workspace:FindFirstChild("ActiveBrainrots")
-        if f then for _,obj in pairs(f:GetDescendants()) do
-            if obj:IsA("Model") and not Processed[obj] then
-                for _,s in pairs(Config.Sel.Brain) do if obj.Name:find(s) then table.insert(List,obj) break end end
-            end
-        end end
+        if f then 
+            for _,rarityFolder in pairs(f:GetChildren()) do
+                -- Verifica si la carpeta coincide con la selección (Common, Rare...)
+                if table.find(Config.Sel.Brain, rarityFolder.Name) then
+                    -- Busca PROFUNDO en la carpeta de esa rareza
+                    for _,obj in pairs(rarityFolder:GetDescendants()) do
+                        if obj:IsA("Model") and not Processed[obj] then
+                            -- El objeto es válido si tiene una parte "Root" o un Prompt dentro
+                            if obj:FindFirstChild("Root") or obj:FindFirstChildWhichIsA("ProximityPrompt", true) then
+                                table.insert(List, obj)
+                            end
+                        end
+                    end
+                end
+            end 
+        end
     end
 
     for _,v in pairs(List) do
@@ -169,10 +199,18 @@ local function GetTarget()
 end
 
 -- --- [ INTERFAZ ] ---
-local Section = FarmTab:Section({ Title = "🔥 VORTEX v25 (LIFE SAVER)" })
+local Section = FarmTab:Section({ Title = "🔥 VORTEX v26 (FINAL)" })
 
 Section:Toggle({ Title = "ACTIVAR", Callback = function(s) Config.Enabled = s; if s then Collected = 0; Notify("Farm Iniciado") end end })
 Section:Toggle({ Title = "Modo Debug", Default = true, Callback = function(s) Config.DebugMode = s end })
+
+-- SLIDER NUEVO
+Section:Slider({ 
+    Title = "Rango Detector Tsunami", 
+    Value = { Min = 200, Max = 500, Default = 300 },
+    Callback = function(v) Config.TsunamiRange = v end 
+})
+
 Section:Button({ Title = "🗑️ Limpiar Memoria", Callback = function() Processed = {}; Collected = 0 end })
 
 Section:Toggle({ Title = "Tickets", Callback = function(s) Config.Targets.Tickets = s end })
@@ -185,7 +223,7 @@ Section:Dropdown({ Title = "Filtro Lucky", Multi = true, Values = GetNames("Luck
 Section:Toggle({ Title = "Brainrots", Callback = function(s) Config.Targets.Brainrots = s end })
 Section:Dropdown({ Title = "Filtro Brainrot", Multi = true, Values = GetNames("Brainrots"), Callback = function(v) Config.Sel.Brain = v end })
 
--- --- [ LOOP PRINCIPAL (PRIORIDAD VIDA) ] ---
+-- --- [ LOOP PRINCIPAL ] ---
 RunService.Stepped:Connect(function()
     if Config.Enabled and LocalPlayer.Character then
         for _,p in pairs(LocalPlayer.Character:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide=false end end
@@ -200,7 +238,7 @@ task.spawn(function()
                 local root = GetRoot()
                 if root and LocalPlayer.Character.Humanoid.Health > 0 then
                     
-                    -- 1. DETECTAR PELIGRO (PRIORIDAD MÁXIMA)
+                    -- 1. DETECTAR PELIGRO
                     local isPanic = false
                     local folder = workspace:FindFirstChild("ActiveTsunamis")
                     if folder then
@@ -212,28 +250,24 @@ task.spawn(function()
                         end
                     end
 
-                    -- 2. TOMA DE DECISIONES
+                    -- 2. DECISIÓN
                     if isPanic then
-                        -- MODO SUPERVIVENCIA: Ignora todo lo demás
-                        Notify("⚠️ PELIGRO! Buscando refugio...")
-                        local SafeSpot = GetSafe()
-                        FlyTo(SafeSpot) 
-                        -- Pequeña pausa para asegurar que llegue y no cambie de idea
+                        Notify("⚠️ OLA CERCA! Huyendo...")
+                        local SafeSpot = GetSafe() -- Ahora usa IsPathBlocked
+                        FlyTo(SafeSpot)
                         task.wait(0.5) 
                         
                     elseif Collected >= MaxInv then
-                        -- MODO DEPOSITAR
-                        Notify("🎒 Lleno. Yendo a base...")
-                        FlyTo(HomeCF) -- Aquí sí vamos a HomeCF porque es seguro para depositar
+                        Notify("🎒 Inventario Lleno. Volviendo...")
+                        FlyTo(HomeCF)
                         if (root.Position - HomeCF.Position).Magnitude < 10 then
                             task.wait(1.5)
                             Collected = 0
                             Processed = {}
-                            Notify("✅ Listo. Reiniciando...")
+                            Notify("✅ Limpio. A trabajar.")
                         end
                         
                     else
-                        -- MODO RECOLECTAR (Solo si no hay pánico)
                         local Target = GetTarget()
                         if Target then
                             local Prompt = Target:FindFirstChildWhichIsA("ProximityPrompt", true)
@@ -247,7 +281,7 @@ task.spawn(function()
                                 if Prompt then
                                     local distActual = (root.Position - MovePart.Position).Magnitude
                                     if distActual <= (Prompt.MaxActivationDistance + 3) then
-                                        Notify("⚡ Recogiendo...")
+                                        Notify("⚡ Recogiendo " .. Target.Name)
                                         Prompt.RequiresLineOfSight = false
                                         Prompt.HoldDuration = 0
                                         for i = 1, 15 do fireproximityprompt(Prompt) end
