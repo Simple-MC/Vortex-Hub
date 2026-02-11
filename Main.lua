@@ -17,10 +17,9 @@ local function LoadModule(name)
 end
 
 -- DEFINICIÓN DE TABS
-_G.MainTab = Window:Tab({ Title = "Principal", Icon = "house" }) -- Timers, Local Player
-_G.CombatTab = Window:Tab({ Title = "Combate", Icon = "swords" }) -- God Mode
-_G.EspTab = Window:Tab({ Title = "Visuales", Icon = "eye" })    -- ESP Brainrots/LuckyBlocks
-_G.UtilitiesTab = Window:Tab({ Title = "Utilidades", Icon = "code-xml" }) -- VIP, Prompts
+_G.MainTab = Window:Tab({ Title = "main", Icon = "house" }) -- Timers, Local Player
+_G.EspTab = Window:Tab({ Title = "Visuals", Icon = "eye" })    -- ESP Brainrots/LuckyBlocks
+_G.UtilitiesTab = Window:Tab({ Title = "Utilities", Icon = "code-xml" }) -- VIP, Prompts
 _G.AutoFarmTab = Window:Tab({ Title = "Auto Farm", Icon = "zap" }) -- AUTO FARM 
 
 -- CARGA DE MÓDULOS
