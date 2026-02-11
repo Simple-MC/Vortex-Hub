@@ -3,11 +3,14 @@ local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/rel
 
 local Window = WindUI:CreateWindow({
     Title = "VORTEX HUB",
-    Icon = "terminal", 
+    Icon = "rbxassetid://114764180805798", 
     Author = "Simple-MC",
     Folder = "VortexConfig",      
     Background = "rbxassetid://114764180805798"
 })
+
+Window:EditElement("Transparency", 0.45) -- Ajusta de 0 a 1
+
 
 local function LoadModule(name)
     local url = "https://raw.githubusercontent.com/Simple-MC/Vortex-Hub/main/Modules/" .. name .. ".lua"
