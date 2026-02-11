@@ -30,7 +30,7 @@
 loadstring(game:HttpGet("[https://raw.githubusercontent.com/Simple-MC/Vortex-Hub/main/Main.lua](https://raw.githubusercontent.com/Simple-MC/Vortex-Hub/main/Main.lua)"))()
 
 <div align="center">
-
+</div>
 
 <img src="https://img.shields.io/badge/SUPPORTED_EXECUTORS-WAVE_|_SOLARA_|_ARCEUS_|_DELTA-1a1a1a?style=flat-square" alt="Executors">
 </div>
