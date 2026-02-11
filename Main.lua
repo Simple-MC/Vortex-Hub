@@ -21,7 +21,7 @@ _G.MainTab = Window:Tab({ Title = "main", Icon = "house" }) -- Timers, Local Pla
 _G.EspTab = Window:Tab({ Title = "Visuals", Icon = "eye" })    -- ESP Brainrots/LuckyBlocks
 _G.UtilitiesTab = Window:Tab({ Title = "Utilities", Icon = "code-xml" }) -- VIP, Prompts
 _G.AutoFarmTab = Window:Tab({ Title = "Auto Farm", Icon = "zap" }) -- AUTO FARM 
-_G.SettingsTab = Window:Tab({ Title = "Settings", Icon = "Settings" }) -- AUTO FARM 
+_G.SettingsTab = Window:Tab({ Title = "Settings", Icon = "settings" }) -- AUTO FARM 
 
 
 -- CARGA DE MÓDULOS
