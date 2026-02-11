@@ -4,23 +4,19 @@ local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
 
--- --- [ CONEXIÓN CON MAIN.LUA ] ---
--- Esperamos a que la pestaña exista (Seguridad por si carga desordenado)
+-- --- [ CONEXIÓN ] ---
 local t = 0
 while not _G.SettingsTab and t < 5 do 
     task.wait(0.1)
     t = t + 0.1
 end
 
-if not _G.SettingsTab then 
-    warn("⚠️ SettingsTab no encontrada en Main.lua")
-    return -- Si falla, cancela para no romper el script
-end
-
+if not _G.SettingsTab then return end
 local SettingsTab = _G.SettingsTab
 
 -- --- [ 1. PERFORMANCE ] ---
-local PerfSection = SettingsTab:Section({ Title = "⚡ PERFORMANCE & BATTERY" })
+-- Usamos "Section" para crear el separador visual como en la foto
+local PerfSection = SettingsTab:Section({ Title = "- [ PERFORMANCE & BATTERY ] -" })
 
 PerfSection:Toggle({
     Title = "🔋 OLED Saver (Black Screen)",
@@ -47,7 +43,7 @@ PerfSection:Button({
 })
 
 -- --- [ 2. SERVER ] ---
-local ServerSection = SettingsTab:Section({ Title = "🌐 SERVER UTILITIES" })
+local ServerSection = SettingsTab:Section({ Title = "- [ SERVER UTILITIES ] -" })
 
 ServerSection:Button({
     Title = "🔀 Server Hop",
@@ -60,54 +56,49 @@ ServerSection:Button({
 })
 
 -- --- [ 3. HISTORY LOGS ] ---
-local History = SettingsTab:Section({ Title = "📜 VORTEX CHRONICLES (FULL LOG)" })
+-- CAMBIO IMPORTANTE: Usamos Section para el título principal
+local History = SettingsTab:Section({ Title = "📜 VORTEX CHRONICLES" })
 
-local function Log(v, t, c)
-    SettingsTab:Label({ Title = "["..v.."] "..t, Color = c })
+-- Función corregida: Usa 'Paragraph' en lugar de 'Label'
+local function Log(v, t)
+    -- Paragraph requiere Title y Content
+    SettingsTab:Paragraph({ 
+        Title = "["..v.."] Update:", 
+        Content = t 
+    })
 end
 
--- COLORES
-local R = Color3.fromRGB(255, 60, 60)   -- Critical
-local G = Color3.fromRGB(60, 255, 100)  -- New
-local B = Color3.fromRGB(0, 200, 255)   -- Opt
-local P = Color3.fromRGB(170, 0, 255)   -- Core
-local Y = Color3.fromRGB(255, 200, 0)   -- God
+-- Títulos de Fase usando Section para dividir bonito
+SettingsTab:Section({ Title = "- [ PHASE 1: GENESIS ] -" })
+Log("v1.0", "Core UI Framework Initialization.")
+Log("v2.0", "Implemented TweenService Movement.")
+Log("v5.5", "Tsunami Distance Check Implementation.")
 
-History:Label({ Title = "--- [ PHASE 1: GENESIS ] ---", Color = Color3.new(1,1,1) })
-Log("v1.0", "Core UI Framework Initialization.", P)
-Log("v2.0", "Implemented TweenService Movement.", B)
-Log("v3.0", "Auto-Farm Logic Deployment (Alpha).", G)
-Log("v5.5", "Tsunami Distance Check Implementation.", G)
+SettingsTab:Section({ Title = "- [ PHASE 2: GOD SYSTEMS ] -" })
+Log("v8.0", "Workspace Structure Analysis Complete.")
+Log("v9.0", "Implemented Map Bypass (Arcade/Mars).")
+Log("v10.0", "Client-Side VIP Access Injection.")
 
-History:Label({ Title = "--- [ PHASE 2: GOD SYSTEMS ] ---", Color = Color3.new(1,1,1) })
-Log("v8.0", "Workspace Structure Analysis Complete.", Y)
-Log("v9.0", "Implemented Map Bypass (Arcade/Mars).", Y)
-Log("v10.0", "Client-Side VIP Access Injection.", Y)
+SettingsTab:Section({ Title = "- [ PHASE 3: STABILITY ] -" })
+Log("v14.0", "CRITICAL: Pathfinding Logic Failure Fixed.")
+Log("v16.0", "CRITICAL: Mobile Input Unresponsive Fixed.")
+Log("v17.5", "PATCHED: Y-Axis Offset (+3 Studs).")
 
-History:Label({ Title = "--- [ PHASE 3: STABILITY CRISIS ] ---", Color = Color3.new(1,1,1) })
-Log("v14.0", "CRITICAL: Pathfinding Logic Failure.", R)
-Log("v15.0", "CRITICAL: Memory Leak in Tween.", R)
-Log("v16.0", "CRITICAL: Mobile Input Unresponsive.", R)
-Log("v17.0", "CRITICAL: Terrain Clipping (Floor Stuck).", R)
-Log("v17.5", "PATCHED: Y-Axis Offset (+3 Studs).", R)
+SettingsTab:Section({ Title = "- [ PHASE 4: REVOLUTION ] -" })
+Log("v20.0", "PROTOCOL: Panic Mode (Survival First).")
+Log("v22.0", "FEATURE: Turbo-Interaction System.")
+Log("v24.0", "ALGORITHM: Deep Search Scanner.")
 
-History:Label({ Title = "--- [ PHASE 4: REVOLUTION ] ---", Color = Color3.new(1,1,1) })
-Log("v20.0", "PROTOCOL: Panic Mode (Survival First).", P)
-Log("v22.0", "FEATURE: Turbo-Interaction System.", G)
-Log("v24.0", "ALGORITHM: Deep Search Scanner.", B)
-
-History:Label({ Title = "--- [ PHASE 5: ULTIMATE ] ---", Color = Color3.new(1,1,1) })
-Log("v26.0", "EVENT: UFO Coins Full Support.", P)
-Log("v28.0", "UI: Visual Overhaul & Cleanup.", B)
-Log("v29.0", "CORE: Merged God Mode into Main.", P)
-Log("v30.0", "PHYSICS: Gravity Restoration Logic.", B)
-Log("v30.5", "SYSTEM: Battery Saver Integration.", G)
-Log("v31.0", "RELEASE: Final Stable Build.", G)
+SettingsTab:Section({ Title = "- [ PHASE 5: ULTIMATE ] -" })
+Log("v26.0", "EVENT: UFO Coins Full Support.")
+Log("v29.0", "CORE: Merged God Mode into Main.")
+Log("v31.0", "RELEASE: Final Stable Build.")
 
 -- --- [ 4. CREDITS ] ---
 local Credits = SettingsTab:Section({ Title = "❤️ DEVELOPER CREDITS" })
 
-Credits:Label({ Title = "local Creator = 'Daniel'", Color = Color3.fromRGB(255, 255, 255) })
-Credits:Label({ Title = "local AI_Logic = 'Gemini Premium'", Color = Color3.fromRGB(0, 200, 255) })
-Credits:Label({ Title = "print('Gemini Premium Helped This Project ♥️')", Color = Color3.fromRGB(255, 0, 100) })
-Credits:Label({ Title = "while true do wait() print('Vortex On Top') end", Color = Color3.fromRGB(170, 0, 255) })
+-- Usamos Paragraph para los créditos también
+SettingsTab:Paragraph({ Title = "👑 Creator", Content = "Daniel" })
+SettingsTab:Paragraph({ Title = "🧠 AI Logic", Content = "Gemini Premium" })
+SettingsTab:Paragraph({ Title = "SPECIAL THANKS", Content = "Gemini Premium Helped This Project ♥️" })
+SettingsTab:Paragraph({ Title = "MOTTO", Content = "Vortex On Top 🚀" })
