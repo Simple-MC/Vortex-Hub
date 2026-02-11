@@ -70,8 +70,8 @@ local configBordes = {
 }
 
 -- Toggle principal en la Tab de Combate
-_G.CombatTab:Toggle({
-    Title = "Activar God Mode Total (+VIP)",
+_G.AutoFarmTab:Toggle({
+    Title = "Activate God Mode Total (+VIP)",
     Callback = function(state)
         GodModeEnabled = state
         
