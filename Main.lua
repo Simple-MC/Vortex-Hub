@@ -35,7 +35,8 @@ LoadModule("Esp2")        -- El ESP avanzado (Brainrots y LuckyBlocks)
 LoadModule("Esp3")        -- El ESP avanzado enfocado en UFO Coins 
 LoadModule("Utilities")  -- VIP y Prompts
 LoadModule("AutoCollect")
-LoadModule("Settings") 
+LoadModule("Settings")
+LoadModule("Sectionex") 
 
 WindUI:Notify({
     Title = "VORTEX HUB",
