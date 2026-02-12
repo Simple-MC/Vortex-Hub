@@ -1,3 +1,6 @@
+local Tab = _G.SettingsTab
+
+
 local Section = Tab:Section({ 
     Title = "Section",
     Box = false,
