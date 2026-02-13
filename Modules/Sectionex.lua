@@ -2,6 +2,7 @@ local Tab = _G.SettingsTab
 
 
 local Section = Tab:Section({ 
+    Icon = "eye"
     Title = "SECTION",
     Box = false,
     TextTransparency = 0.05,
