@@ -10,10 +10,6 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 
--- --- [ UI SECTIONS ] ---
-local SectionBR = _G.EspTab:Section({ Title = "👽 Brainrots (Por Rareza y Modelo)" })
-local SectionLB = _G.EspTab:Section({ Title = "🍀 Lucky Blocks" })
-
 -- --- [ CONFIGURACIÓN ] ---
 local Config = {
     Brainrots = { 
@@ -94,26 +90,32 @@ local function GetLuckyBlockNames()
     return names
 end
 
--- --- [ INTERFAZ - BRAINROTS ] ---
+-- --- [ INTERFAZ UI (ESTILO WINDUI) ] ---
 
-SectionBR:Toggle({ 
-    Title = "Activar ESP Brainrots", 
+-- [ SECCIÓN BRAINROTS ]
+_G.EspTab:Section({ Title = "--[ BRAINROTS (ESP) ]--", Icon = "skull" })
+
+_G.EspTab:Toggle({ 
+    Title = "👽 Activar ESP Brainrots", 
     Callback = function(s) 
         Config.Brainrots.Enabled = s 
         if not s then LimpiarTodo("Brainrots") end -- Limpieza Instantánea
     end 
 })
 
-SectionBR:Toggle({ Title = "Láser Rojo Neón", Callback = function(s) Config.Brainrots.Beams = s end })
+_G.EspTab:Toggle({ 
+    Title = "Láser Rojo Neón (Brainrots)", 
+    Callback = function(s) Config.Brainrots.Beams = s end 
+})
 
-SectionBR:Dropdown({
+_G.EspTab:Dropdown({
     Title = "Seleccionar por RAREZA",
     Multi = true,
     Values = GetRarityNames(),
     Callback = function(v) Config.Brainrots.RarityTargets = v end
 })
 
-SectionBR:Dropdown({
+_G.EspTab:Dropdown({
     Title = "Seleccionar por NOMBRE",
     Multi = true,
     Values = GetBrainrotModels(),
@@ -121,18 +123,23 @@ SectionBR:Dropdown({
 })
 
 
--- --- [ INTERFAZ - LUCKY BLOCKS ] ---
-SectionLB:Toggle({ 
-    Title = "Activar ESP Lucky Blocks", 
+-- [ SECCIÓN LUCKY BLOCKS ]
+_G.EspTab:Section({ Title = "--[ LUCKY BLOCKS (ESP) ]--", Icon = "package" })
+
+_G.EspTab:Toggle({ 
+    Title = "🍀 Activar ESP Lucky Blocks", 
     Callback = function(s) 
         Config.LuckyBlocks.Enabled = s 
         if not s then LimpiarTodo("LuckyBlocks") end -- Limpieza Instantánea
     end 
 })
 
-SectionLB:Toggle({ Title = "Láser Amarillo Neón", Callback = function(s) Config.LuckyBlocks.Beams = s end })
+_G.EspTab:Toggle({ 
+    Title = "Láser Amarillo Neón (Lucky Blocks)", 
+    Callback = function(s) Config.LuckyBlocks.Beams = s end 
+})
 
-SectionLB:Dropdown({
+_G.EspTab:Dropdown({
     Title = "Seleccionar Lucky Blocks",
     Multi = true,
     Values = GetLuckyBlockNames(),
