@@ -8,17 +8,18 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 
--- Usamos el mismo Tab global (_G.EspTab)
-local SectionUFO = _G.EspTab:Section({ Title = "👽 Evento UFO" })
-
 -- --- [ CONFIGURACIÓN ] ---
 local Config = {
     UFO = { Enabled = false, Beams = false }
 }
 
--- --- [ INTERFAZ UI ] ---
+-- --- [ INTERFAZ UI (ESTILO WINDUI) ] ---
 
-SectionUFO:Toggle({
+-- Creamos la sección visual con tu estilo y un icono
+_G.EspTab:Section({ Title = "--[ EVENTO UFO (ESP) ]--", Icon = "rocket" })
+
+-- Toggles conectados directamente a _G.EspTab
+_G.EspTab:Toggle({
     Title = "🛸 ESP Monedas UFO",
     Callback = function(s) 
         Config.UFO.Enabled = s 
@@ -26,7 +27,7 @@ SectionUFO:Toggle({
     end
 })
 
-SectionUFO:Toggle({
+_G.EspTab:Toggle({
     Title = "Láser Morado Neón (UFO)",
     Callback = function(s) Config.UFO.Beams = s end
 })
