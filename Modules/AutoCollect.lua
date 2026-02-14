@@ -21,8 +21,8 @@ local EventParts = {
     "ArcadeEventTickets",
     "ArcadeEventConsoles",
     "MoneyEventParts",
-    "UFOEventParts,"
-    "CandyEventParts,"
+    "UFOEventParts",
+    "CandyEventParts",
     "ValentinesCoinParts"
 }
 
