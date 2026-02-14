@@ -21,7 +21,9 @@ local EventParts = {
     "ArcadeEventTickets",
     "ArcadeEventConsoles",
     "MoneyEventParts",
-    "UFOEventParts"
+    "UFOEventParts,"
+    "CandyEventParts,"
+    "ValentinesCoinParts"
 }
 
 -- --- [ CONFIGURACIÓN ] ---
@@ -251,7 +253,11 @@ FarmTab:Toggle({ Title = "Consoles 🎮", Callback = function(s) Config.ActiveFo
 
 FarmTab:Section({ Title = "--[ EVENTO MONEY ]--" })
 FarmTab:Toggle({ Title = "Gold Money 🪙", Callback = function(s) Config.ActiveFolders["MoneyEventParts"] = s end })
+FarmTab:Section({ Title = "--[ EVENTO UFO ]--" })
 FarmTab:Toggle({ Title = "UFO Money 👽", Callback = function(s) Config.ActiveFolders["UFOEventParts"] = s end })
+FarmTab:Section({ Title = "--[ EVENTO VALENTINE'S DAY ]--" })
+FarmTab:Toggle({ Title = "CANDYS 🍭", Callback = function(s) Config.ActiveFolders["CandyEventParts"] = s end })
+FarmTab:Toggle({ Title = "COINS 🍬", Callback = function(s) Config.ActiveFolders["ValentinesCoinParts"] = s end })
 
 
 FarmTab:Section({ Title = "--[ OTROS EVENTOS ]--" })
