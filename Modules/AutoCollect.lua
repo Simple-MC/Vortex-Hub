@@ -1,12 +1,5 @@
 --[[
     MODULE: VORTEX AUTO-FARM v30 (CLEAN & STABLE)
-FIXES:
-
-1. NoClip is disabled when the Farm is shut down (Physics Restore).
-
-2. Debug notifications are disabled by default.
-
-3. Clean UI without buttons
 ]]
 
 local Players = game:GetService("Players")
@@ -22,6 +15,15 @@ local t = 0
 while not FarmTab and t < 5 do task.wait(0.1); t=t+0.1; FarmTab = _G.AutoFarmTab end
 if not FarmTab then warn("❌ AutoFarmTab did not load"); return end
 
+-- --- [ CARPETAS DE EVENTOS FÁCILES DE ACTUALIZAR ] ---
+-- Añade aquí los nombres de las carpetas de futuras actualizaciones
+local EventParts = {
+    "ArcadeEventTickets",
+    "ArcadeEventConsoles",
+    "MoneyEventParts",
+    "UFOEventParts"
+}
+
 -- --- [ CONFIGURACIÓN ] ---
 local HomeCF = CFrame.new(136.92, 3.11, -9.24) + Vector3.new(0, 3, 0)
 local Collected = 0
@@ -30,10 +32,11 @@ local Processed = {}
 
 local Config = {
     Enabled = false,
-    DebugMode = false, -- Desactivado por defecto para no molestar
+    DebugMode = false,
     Speed = 350, 
     TsunamiRange = 300, 
-    Targets = { Tickets = false, Consoles = false, Money = false, UFO = false, LuckyBlocks = false, Brainrots = false },
+    ActiveFolders = {}, -- El script guardará aquí si el botón de la carpeta está en true/false
+    Targets = { LuckyBlocks = false, Brainrots = false },
     Sel = { Lucky = {}, Brain = {} }
 }
 
@@ -150,23 +153,26 @@ local function GetSafe()
     return best or SafeZones[1]
 end
 
--- --- [ ESCANER ] ---
+-- --- [ ESCANER DINÁMICO ] ---
 local function GetTarget()
     local c, sd = nil, math.huge
     local root = GetRoot()
     if not root then return nil end
     local List = {}
 
-    if Config.Targets.Tickets then local f=workspace:FindFirstChild("ArcadeEventTickets") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
-    if Config.Targets.Consoles then local f=workspace:FindFirstChild("ArcadeEventConsoles") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
-    if Config.Targets.Money then local f=workspace:FindFirstChild("MoneyEventParts") if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end end
-    
-    -- UFO MONEY
-    if Config.Targets.UFO then 
-        local f=workspace:FindFirstChild("UFOEventParts") 
-        if f then for _,v in pairs(f:GetChildren()) do table.insert(List,v) end end 
+    -- SISTEMA NUEVO: Escanea dinámicamente lo que agregues a la tabla EventParts
+    for _, folderName in ipairs(EventParts) do
+        if Config.ActiveFolders[folderName] then
+            local f = workspace:FindFirstChild(folderName)
+            if f then 
+                for _,v in pairs(f:GetChildren()) do 
+                    table.insert(List, v) 
+                end 
+            end
+        end
     end
 
+    -- Los LuckyBlocks y Brainrots se quedan aparte porque tienen su filtro avanzado
     if Config.Targets.LuckyBlocks then
         local f=workspace:FindFirstChild("ActiveLuckyBlocks")
         if f then 
@@ -209,24 +215,20 @@ local function GetTarget()
     return c
 end
 
--- --- [ INTERFAZ SIMPLE ] ---
-local Section = FarmTab:Section({ Title = "⚡ VORTEX AUTO-FARM" })
+-- --- [ INTERFAZ SIMPLE (ESTILO CLEAN) ] ---
 
-Section:Toggle({ 
+FarmTab:Section({ Title = "--[ VORTEX AUTO-FARM ]--" })
+
+FarmTab:Toggle({ 
     Title = "🔥 ACTIVATE FARMING", 
     Callback = function(s) 
         Config.Enabled = s
-        
-        -- AL ACTIVAR:
         if s then 
             Collected = 0
             Notify("ACTIVATE FARMING") 
-        
-        -- AL DESACTIVAR: (FIX NOCLIP)
         else
             if CurTween then CurTween:Cancel() end
             IsFlying = false
-            -- Restaurar físicas inmediatamente
             if LocalPlayer.Character then
                 for _,p in pairs(LocalPlayer.Character:GetDescendants()) do
                     if p:IsA("BasePart") then p.CanCollide = true end
@@ -237,20 +239,27 @@ Section:Toggle({
     end 
 })
 
-Section:Toggle({ Title = "Debug Notifications", Default = false, Callback = function(s) Config.DebugMode = s end })
+FarmTab:Toggle({ Title = "Debug Notifications", Default = false, Callback = function(s) Config.DebugMode = s end })
+FarmTab:Slider({ Title = "Tsunami Detector Range", Value = { Min = 200, Max = 500, Default = 300 }, Callback = function(v) Config.TsunamiRange = v end })
 
-Section:Slider({ Title = "Tsunami Detector Range", Value = { Min = 200, Max = 500, Default = 300 }, Callback = function(v) Config.TsunamiRange = v end })
 
-Section:Toggle({ Title = "Tickets 🎫", Callback = function(s) Config.Targets.Tickets = s end })
-Section:Toggle({ Title = "Consoles 🎮", Callback = function(s) Config.Targets.Consoles = s end })
-Section:Toggle({ Title = "Gold Money 🪙", Callback = function(s) Config.Targets.Money = s end })
-Section:Toggle({ Title = "UFO Money 👽", Callback = function(s) Config.Targets.UFO = s end })
+FarmTab:Section({ Title = "--[ EVENTO ARCADE ]--" })
+-- Fijate cómo ahora el Callback activa el nombre exacto de la carpeta
+FarmTab:Toggle({ Title = "Tickets 🎫", Callback = function(s) Config.ActiveFolders["ArcadeEventTickets"] = s end })
+FarmTab:Toggle({ Title = "Consoles 🎮", Callback = function(s) Config.ActiveFolders["ArcadeEventConsoles"] = s end })
 
-Section:Toggle({ Title = "Lucky Blocks", Callback = function(s) Config.Targets.LuckyBlocks = s end })
-Section:Dropdown({ Title = "Lucky Filter", Multi = true, Values = GetNames("LuckyBlocks"), Callback = function(v) Config.Sel.Lucky = v end })
 
-Section:Toggle({ Title = "Brainrots", Callback = function(s) Config.Targets.Brainrots = s end })
-Section:Dropdown({ Title = "Brainrot Filter", Multi = true, Values = GetNames("Brainrots"), Callback = function(v) Config.Sel.Brain = v end })
+FarmTab:Section({ Title = "--[ EVENTO MONEY ]--" })
+FarmTab:Toggle({ Title = "Gold Money 🪙", Callback = function(s) Config.ActiveFolders["MoneyEventParts"] = s end })
+FarmTab:Toggle({ Title = "UFO Money 👽", Callback = function(s) Config.ActiveFolders["UFOEventParts"] = s end })
+
+
+FarmTab:Section({ Title = "--[ OTROS EVENTOS ]--" })
+FarmTab:Toggle({ Title = "Lucky Blocks", Callback = function(s) Config.Targets.LuckyBlocks = s end })
+FarmTab:Dropdown({ Title = "Lucky Filter", Multi = true, Values = GetNames("LuckyBlocks"), Callback = function(v) Config.Sel.Lucky = v end })
+
+FarmTab:Toggle({ Title = "Brainrots", Callback = function(s) Config.Targets.Brainrots = s end })
+FarmTab:Dropdown({ Title = "Brainrot Filter", Multi = true, Values = GetNames("Brainrots"), Callback = function(v) Config.Sel.Brain = v end })
 
 -- --- [ LOOP FÍSICO ] ---
 RunService.Stepped:Connect(function()
