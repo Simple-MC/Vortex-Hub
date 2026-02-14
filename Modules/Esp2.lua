@@ -10,19 +10,19 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 
--- Usamos el mismo Tab que ya existe (_G.EspTab)
-local SectionArcade = _G.EspTab:Section({ Title = "🕹️ Evento Arcade" })
-
 -- --- [ CONFIGURACIÓN ] ---
 local Config = {
     Consoles = { Enabled = false, Beams = false },
     Tickets = { Enabled = false, Beams = false }
 }
 
--- --- [ INTERFAZ UI ] ---
+-- --- [ INTERFAZ UI (ESTILO WINDUI) ] ---
 
--- 1. CONSOLAS
-SectionArcade:Toggle({
+-- Creamos la sección visual con tu estilo y un icono
+_G.EspTab:Section({ Title = "--[ EVENTO ARCADE (ESP) ]--", Icon = "gamepad-2" })
+
+-- 1. CONSOLAS (Se conectan a _G.EspTab directamente)
+_G.EspTab:Toggle({
     Title = "🎮 ESP Consolas",
     Callback = function(s) 
         Config.Consoles.Enabled = s 
@@ -30,13 +30,13 @@ SectionArcade:Toggle({
     end
 })
 
-SectionArcade:Toggle({
+_G.EspTab:Toggle({
     Title = "Láser Azul Neón (Consolas)",
     Callback = function(s) Config.Consoles.Beams = s end
 })
 
 -- 2. TICKETS
-SectionArcade:Toggle({
+_G.EspTab:Toggle({
     Title = "🎟️ ESP Tickets",
     Callback = function(s) 
         Config.Tickets.Enabled = s 
@@ -44,7 +44,7 @@ SectionArcade:Toggle({
     end
 })
 
-SectionArcade:Toggle({
+_G.EspTab:Toggle({
     Title = "Láser Verde Neón (Tickets)",
     Callback = function(s) Config.Tickets.Beams = s end
 })
