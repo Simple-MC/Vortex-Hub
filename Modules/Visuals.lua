@@ -2,12 +2,12 @@
 local CelestialParagraph = _G.MainTab:Paragraph({
     Title = "Buscando Evento Principal...",
     Content = "Esperando datos...",
-    Icon = "lucide-timer"
+    Icon = "timer"
 })
 local DynamicEventParagraph = _G.MainTab:Paragraph({
     Title = "Buscando Evento...",
     Content = "Esperando datos...",
-    Icon = "lucide-clock"
+    Icon = "clock"
 })
 
 local RunService = game:GetService("RunService")
