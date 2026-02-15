@@ -13,25 +13,26 @@ local OriginalMudData = {}
 local BordesEstructura = {}
 
 -- ==========================================
--- 🛠️ LISTA DE COSAS QUE ESTORBAN (FÁCIL DE ACTUALIZAR)
+-- 🛠️ LISTA DINÁMICA DE COSAS QUE ESTORBAN
 -- ==========================================
--- Escribe aquí la ruta exacta del objeto o carpeta que quieres desaparecer.
--- Ejemplo: Si meten "WinterMap" y quieres borrar "IceWalls", lo pones aquí.
-
-local CosasQueEstorban = {
-    workspace:FindFirstChild("ArcadeMap") and workspace.ArcadeMap:FindFirstChild("RightWalls"),
-    workspace:FindFirstChild("RadioactiveMap") and workspace.RadioactiveMap:FindFirstChild("RightWalls"),
-    workspace:FindFirstChild("MarsMap") and workspace.MarsMap:FindFirstChild("Walls") and workspace.MarsMap.Walls:GetChildren()[7],
-    workspace:FindFirstChild("MarsMap") and workspace.MarsMap:FindFirstChild("Deco"),
-    workspace:FindFirstChild("MoneyMap") and workspace.MoneyMap:FindFirstChild("DefaultStudioMap") and workspace.MoneyMap.DefaultStudioMap:FindFirstChild("Walls"),
-    workspace:FindFirstChild("MoneyMap") and workspace.MoneyMap:FindFirstChild("DefaultStudioMap") and workspace.MoneyMap.DefaultStudioMap:FindFirstChild("RightWalls"),
-    workspace:FindFirstChild("DefaultMap") and workspace.DefaultMap:FindFirstChild("RightWalls"),
-    workspace:FindFirstChild("Misc") and workspace.Misc:FindFirstChild("BrickAddition"),
-    workspace:FindFirstChild("DefaultMap") and workspace.DefaultMap:FindFirstChild("Walls") -- Todo DefaultMap.Walls
-    
-    -- Para futuras updates, solo añade una línea aquí, ejemplo:
-    -- workspace:FindFirstChild("NuevoMapa") and workspace.NuevoMapa:FindFirstChild("CosasMalas")
-}
+-- Al ponerlo como función, escanea el mapa en tiempo real por si el mapa cambia de la nada.
+local function ObtenerCosasQueEstorban()
+    return {
+        workspace:FindFirstChild("ArcadeMap") and workspace.ArcadeMap:FindFirstChild("RightWalls"),
+        workspace:FindFirstChild("RadioactiveMap") and workspace.RadioactiveMap:FindFirstChild("RightWalls"),
+        workspace:FindFirstChild("MarsMap") and workspace.MarsMap:FindFirstChild("Walls") and workspace.MarsMap.Walls:GetChildren()[7],
+        workspace:FindFirstChild("MarsMap") and workspace.MarsMap:FindFirstChild("Deco"),
+        workspace:FindFirstChild("MoneyMap") and workspace.MoneyMap:FindFirstChild("DefaultStudioMap") and workspace.MoneyMap.DefaultStudioMap:FindFirstChild("Walls"),
+        workspace:FindFirstChild("MoneyMap") and workspace.MoneyMap:FindFirstChild("DefaultStudioMap") and workspace.MoneyMap.DefaultStudioMap:FindFirstChild("RightWalls"),
+        workspace:FindFirstChild("DefaultMap") and workspace.DefaultMap:FindFirstChild("RightWalls"),
+        workspace:FindFirstChild("Misc") and workspace.Misc:FindFirstChild("BrickAddition"),
+        workspace:FindFirstChild("DefaultMap") and workspace.DefaultMap:FindFirstChild("Walls"),
+        
+        -- 🔥 UPDATE SAN VALENTÍN 🔥
+        workspace:FindFirstChild("ValentinesMap") and workspace.ValentinesMap:FindFirstChild("RightWalls"),
+        workspace:FindFirstChild("ValentinesMap") and workspace.ValentinesMap:FindFirstChild("Walls")
+    }
+end
 
 -- ==========================================
 
@@ -61,10 +62,11 @@ local function RestoreAll()
     OriginalMudData = {}
 
     pcall(function()
+        -- Agregamos ValentinesMap_SharedInstances a la lista de restauración
         local folders = {
             "DefaultMap_SharedInstances", "MoneyMap_SharedInstances", 
             "MarsMap_SharedInstances", "RadioactiveMap_SharedInstances", 
-            "ArcadeMap_SharedInstances"
+            "ArcadeMap_SharedInstances", "ValentinesMap_SharedInstances"
         }
         for _, folderName in pairs(folders) do
             local folder = workspace:FindFirstChild(folderName)
@@ -112,20 +114,22 @@ _G.AutoFarmTab:Toggle({
                     pcall(function()
                         
                         -- === LIMPIEZA DINÁMICA DE MAPAS ===
-                        -- Recorremos nuestra lista maestra y mandamos todo al almacén temporal
-                        for _, objetoEnMedio in ipairs(CosasQueEstorban) do
+                        local listaBasura = ObtenerCosasQueEstorban()
+                        for _, objetoEnMedio in pairs(listaBasura) do
                             if objetoEnMedio then
                                 SafeMove(objetoEnMedio, AlmacenTemporal)
                             end
                         end
 
                         -- === FREE VIP & WALL BYPASS ===
+                        -- Agregamos ValentinesMap_SharedInstances a la lista
                         local vipFolders = {
                             "DefaultMap_SharedInstances", 
                             "MoneyMap_SharedInstances", 
                             "MarsMap_SharedInstances", 
                             "RadioactiveMap_SharedInstances", 
-                            "ArcadeMap_SharedInstances"
+                            "ArcadeMap_SharedInstances",
+                            "ValentinesMap_SharedInstances"
                         }
 
                         for _, folderName in pairs(vipFolders) do
@@ -140,7 +144,7 @@ _G.AutoFarmTab:Toggle({
                             end
                         end
                     end)
-                    task.wait(0.5) -- Revisa cada medio segundo por si regeneran el mapa
+                    task.wait(0.5) -- Revisa cada medio segundo
                 end
             end)
 
