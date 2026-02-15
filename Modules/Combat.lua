@@ -1,3 +1,8 @@
+--[[
+    MODULE: VORTEX GOD MODE & WALL BYPASS (Combat.lua)
+    FEATURES: Dynamic Folder Cleaning, VIP/Wall Bypass, Custom Borders
+]]
+
 local AlmacenTemporal = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -6,6 +11,29 @@ local GodModeEnabled = false
 local OriginalParents = {}
 local OriginalMudData = {}
 local BordesEstructura = {}
+
+-- ==========================================
+-- 🛠️ LISTA DE COSAS QUE ESTORBAN (FÁCIL DE ACTUALIZAR)
+-- ==========================================
+-- Escribe aquí la ruta exacta del objeto o carpeta que quieres desaparecer.
+-- Ejemplo: Si meten "WinterMap" y quieres borrar "IceWalls", lo pones aquí.
+
+local CosasQueEstorban = {
+    workspace:FindFirstChild("ArcadeMap") and workspace.ArcadeMap:FindFirstChild("RightWalls"),
+    workspace:FindFirstChild("RadioactiveMap") and workspace.RadioactiveMap:FindFirstChild("RightWalls"),
+    workspace:FindFirstChild("MarsMap") and workspace.MarsMap:FindFirstChild("Walls") and workspace.MarsMap.Walls:GetChildren()[7],
+    workspace:FindFirstChild("MarsMap") and workspace.MarsMap:FindFirstChild("Deco"),
+    workspace:FindFirstChild("MoneyMap") and workspace.MoneyMap:FindFirstChild("DefaultStudioMap") and workspace.MoneyMap.DefaultStudioMap:FindFirstChild("Walls"),
+    workspace:FindFirstChild("MoneyMap") and workspace.MoneyMap:FindFirstChild("DefaultStudioMap") and workspace.MoneyMap.DefaultStudioMap:FindFirstChild("RightWalls"),
+    workspace:FindFirstChild("DefaultMap") and workspace.DefaultMap:FindFirstChild("RightWalls"),
+    workspace:FindFirstChild("Misc") and workspace.Misc:FindFirstChild("BrickAddition"),
+    workspace:FindFirstChild("DefaultMap") and workspace.DefaultMap:FindFirstChild("Walls") -- Todo DefaultMap.Walls
+    
+    -- Para futuras updates, solo añade una línea aquí, ejemplo:
+    -- workspace:FindFirstChild("NuevoMapa") and workspace.NuevoMapa:FindFirstChild("CosasMalas")
+}
+
+-- ==========================================
 
 -- Funcion de movimiento seguro
 local function SafeMove(obj, newParent)
@@ -69,9 +97,12 @@ local configBordes = {
     {nombre = "Borde13", size = Vector3.new(6, 90, 284), cf = CFrame.new(4353, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)}
 }
 
--- Toggle principal en la Tab de Combate
+-- Creamos la sección visual en WindUI (Asegúrate de que _G.AutoFarmTab exista en tu Main.lua)
+_G.AutoFarmTab:Section({ Title = "--[ GOD MODE & PROTECCIÓN ]--", Icon = "shield" })
+
+-- Toggle principal
 _G.AutoFarmTab:Toggle({
-    Title = "Activate God Mode Total (+VIP)",
+    Title = "🔥 Activate God Mode Total (+VIP)",
     Callback = function(state)
         GodModeEnabled = state
         
@@ -79,29 +110,14 @@ _G.AutoFarmTab:Toggle({
             task.spawn(function()
                 while GodModeEnabled do
                     pcall(function()
-                        -- === LIMPIEZA DE MAPAS (GOD MODE) ===
-                        SafeMove(workspace:FindFirstChild("ArcadeMap") and workspace.ArcadeMap:FindFirstChild("RightWalls"), AlmacenTemporal)
-                        SafeMove(workspace:FindFirstChild("RadioactiveMap") and workspace.RadioactiveMap:FindFirstChild("RightWalls"), AlmacenTemporal)
                         
-                        if workspace:FindFirstChild("MarsMap") then
-                            if workspace.MarsMap:FindFirstChild("Walls") then
-                                SafeMove(workspace.MarsMap.Walls:GetChildren()[7], AlmacenTemporal)
-                            end
-                            if workspace.MarsMap:FindFirstChild("Deco") then
-                                SafeMove(workspace.MarsMap.Deco, AlmacenTemporal)
+                        -- === LIMPIEZA DINÁMICA DE MAPAS ===
+                        -- Recorremos nuestra lista maestra y mandamos todo al almacén temporal
+                        for _, objetoEnMedio in ipairs(CosasQueEstorban) do
+                            if objetoEnMedio then
+                                SafeMove(objetoEnMedio, AlmacenTemporal)
                             end
                         end
-
-                        if workspace:FindFirstChild("MoneyMap") and workspace.MoneyMap:FindFirstChild("DefaultStudioMap") then
-                            SafeMove(workspace.MoneyMap.DefaultStudioMap:FindFirstChild("Walls"), AlmacenTemporal)
-                            SafeMove(workspace.MoneyMap.DefaultStudioMap:FindFirstChild("RightWalls"), AlmacenTemporal)
-                        end
-
-                        SafeMove(workspace:FindFirstChild("DefaultMap") and workspace.DefaultMap:FindFirstChild("RightWalls"), AlmacenTemporal)
-                        SafeMove(workspace:FindFirstChild("Misc") and workspace.Misc:FindFirstChild("BrickAddition"), AlmacenTemporal)
-
-                        -- Nuevo: Mueve TODO DefaultMap.Walls al almacen de un golpe
-                        SafeMove(workspace:FindFirstChild("DefaultMap") and workspace.DefaultMap:FindFirstChild("Walls"), AlmacenTemporal)
 
                         -- === FREE VIP & WALL BYPASS ===
                         local vipFolders = {
@@ -124,18 +140,20 @@ _G.AutoFarmTab:Toggle({
                             end
                         end
                     end)
-                    task.wait(0.5)
+                    task.wait(0.5) -- Revisa cada medio segundo por si regeneran el mapa
                 end
             end)
 
-            -- Funcion de crear bordes
+            -- Crear bordes rojos de protección
             for _, d in ipairs(configBordes) do
                 local p = Instance.new("Part", workspace)
                 p.Name = d.nombre; p.Size = d.size; p.CFrame = d.cf; p.Anchored = true; p.CanCollide = true
                 p.Color = Color3.fromRGB(255, 60, 60); p.Material = Enum.Material.Neon; p.Transparency = 0.35
                 table.insert(BordesEstructura, p)
             end
+            
         else
+            -- Restaurar todo a la normalidad
             RestoreAll()
             for _, b in pairs(BordesEstructura) do if b then b:Destroy() end end
             BordesEstructura = {}
