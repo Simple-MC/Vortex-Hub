@@ -1,5 +1,9 @@
 --[[
-    MODULE: VORTEX AUTO-FARM v30 (CLEAN & STABLE)
+    MODULE: VORTEX AUTO-FARM v30 (FINAL & STABLE)
+    FIXES:
+    1. Personaje Borracho Fix (PlatformStand & GettingUp).
+    2. Vuelo Recto Fix (Rotación bloqueada en el Tween).
+    3. Error de Sintaxis (Comas) arreglado.
 ]]
 
 local Players = game:GetService("Players")
@@ -16,7 +20,6 @@ while not FarmTab and t < 5 do task.wait(0.1); t=t+0.1; FarmTab = _G.AutoFarmTab
 if not FarmTab then warn("❌ AutoFarmTab did not load"); return end
 
 -- --- [ CARPETAS DE EVENTOS FÁCILES DE ACTUALIZAR ] ---
--- Añade aquí los nombres de las carpetas de futuras actualizaciones
 local EventParts = {
     "ArcadeEventTickets",
     "ArcadeEventConsoles",
@@ -37,7 +40,7 @@ local Config = {
     DebugMode = false,
     Speed = 350, 
     TsunamiRange = 300, 
-    ActiveFolders = {}, -- El script guardará aquí si el botón de la carpeta está en true/false
+    ActiveFolders = {}, 
     Targets = { LuckyBlocks = false, Brainrots = false },
     Sel = { Lucky = {}, Brain = {} }
 }
@@ -73,7 +76,7 @@ end
 
 local function GetRoot() return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") end
 
--- --- [ VUELO MEJORADO ] ---
+-- --- [ VUELO MEJORADO Y RECTO ] ---
 local CurTween = nil
 local IsFlying = false 
 
@@ -87,7 +90,13 @@ local function FlyTo(TargetCF, Emergency)
     if CurTween then CurTween:Cancel() end
     
     IsFlying = true 
-    CurTween = TweenService:Create(root, TweenInfo.new(Time, Enum.EasingStyle.Linear), {CFrame = TargetCF})
+    
+    -- 🛠️ FIX VUELO RECTO: Solo tomamos la Posición, ignoramos la rotación chueca del objeto
+    -- Mantenemos al jugador mirando recto en el eje Y
+    local _, rotY, _ = root.CFrame:ToEulerAnglesYXZ()
+    local CFrameDerecho = CFrame.new(TargetCF.Position) * CFrame.Angles(0, rotY, 0)
+    
+    CurTween = TweenService:Create(root, TweenInfo.new(Time, Enum.EasingStyle.Linear), {CFrame = CFrameDerecho})
     CurTween:Play()
     
     local e = 0
@@ -117,7 +126,10 @@ local function FlyTo(TargetCF, Emergency)
     
     CurTween = nil
     IsFlying = false 
-    if GetRoot() then root.Velocity = Vector3.zero end
+    if GetRoot() then 
+        root.Velocity = Vector3.zero 
+        root.RotVelocity = Vector3.zero
+    end
 end
 
 -- --- [ SUPERVIVENCIA ] ---
@@ -162,7 +174,6 @@ local function GetTarget()
     if not root then return nil end
     local List = {}
 
-    -- SISTEMA NUEVO: Escanea dinámicamente lo que agregues a la tabla EventParts
     for _, folderName in ipairs(EventParts) do
         if Config.ActiveFolders[folderName] then
             local f = workspace:FindFirstChild(folderName)
@@ -174,7 +185,6 @@ local function GetTarget()
         end
     end
 
-    -- Los LuckyBlocks y Brainrots se quedan aparte porque tienen su filtro avanzado
     if Config.Targets.LuckyBlocks then
         local f=workspace:FindFirstChild("ActiveLuckyBlocks")
         if f then 
@@ -231,11 +241,25 @@ FarmTab:Toggle({
         else
             if CurTween then CurTween:Cancel() end
             IsFlying = false
+            
+            -- 🛠️ FIX PERSONAJE BORRACHO: Lo despertamos y restauramos físicas
             if LocalPlayer.Character then
+                local root = GetRoot()
+                local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                
+                if hum then 
+                    hum.PlatformStand = false 
+                    hum:ChangeState(Enum.HumanoidStateType.GettingUp) 
+                end
+                
                 for _,p in pairs(LocalPlayer.Character:GetDescendants()) do
                     if p:IsA("BasePart") then p.CanCollide = true end
                 end
-                if GetRoot() then GetRoot().Velocity = Vector3.zero end
+                
+                if root then 
+                    root.Velocity = Vector3.zero 
+                    root.RotVelocity = Vector3.zero
+                end
             end
         end
     end 
@@ -246,15 +270,16 @@ FarmTab:Slider({ Title = "Tsunami Detector Range", Value = { Min = 200, Max = 50
 
 
 FarmTab:Section({ Title = "--[ EVENTO ARCADE ]--" })
--- Fijate cómo ahora el Callback activa el nombre exacto de la carpeta
 FarmTab:Toggle({ Title = "Tickets 🎫", Callback = function(s) Config.ActiveFolders["ArcadeEventTickets"] = s end })
 FarmTab:Toggle({ Title = "Consoles 🎮", Callback = function(s) Config.ActiveFolders["ArcadeEventConsoles"] = s end })
 
 
 FarmTab:Section({ Title = "--[ EVENTO MONEY ]--" })
 FarmTab:Toggle({ Title = "Gold Money 🪙", Callback = function(s) Config.ActiveFolders["MoneyEventParts"] = s end })
+
 FarmTab:Section({ Title = "--[ EVENTO UFO ]--" })
 FarmTab:Toggle({ Title = "UFO Money 👽", Callback = function(s) Config.ActiveFolders["UFOEventParts"] = s end })
+
 FarmTab:Section({ Title = "--[ EVENTO VALENTINE'S DAY ]--" })
 FarmTab:Toggle({ Title = "CANDYS 🍭", Callback = function(s) Config.ActiveFolders["CandyEventParts"] = s end })
 FarmTab:Toggle({ Title = "COINS 🍬", Callback = function(s) Config.ActiveFolders["ValentinesCoinParts"] = s end })
@@ -267,11 +292,24 @@ FarmTab:Dropdown({ Title = "Lucky Filter", Multi = true, Values = GetNames("Luck
 FarmTab:Toggle({ Title = "Brainrots", Callback = function(s) Config.Targets.Brainrots = s end })
 FarmTab:Dropdown({ Title = "Brainrot Filter", Multi = true, Values = GetNames("Brainrots"), Callback = function(v) Config.Sel.Brain = v end })
 
--- --- [ LOOP FÍSICO ] ---
+-- --- [ LOOP FÍSICO Y ESTABILIZACIÓN ] ---
 RunService.Stepped:Connect(function()
     if Config.Enabled and LocalPlayer.Character and IsFlying then
-        for _,p in pairs(LocalPlayer.Character:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide=false end end
-        if GetRoot() then GetRoot().Velocity = Vector3.zero end
+        -- Desactivar físicas de caminata
+        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum.PlatformStand = true end 
+        
+        -- Modo Fantasma (Atravesar paredes)
+        for _,p in pairs(LocalPlayer.Character:GetDescendants()) do 
+            if p:IsA("BasePart") then p.CanCollide = false end 
+        end
+        
+        -- Congelar inercias de giro
+        local root = GetRoot()
+        if root then 
+            root.Velocity = Vector3.zero 
+            root.RotVelocity = Vector3.zero
+        end
     end
 end)
 
