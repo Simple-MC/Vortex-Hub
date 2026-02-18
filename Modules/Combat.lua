@@ -27,6 +27,10 @@ local function ObtenerCosasQueEstorban()
         workspace:FindFirstChild("DefaultMap") and workspace.DefaultMap:FindFirstChild("RightWalls"),
         workspace:FindFirstChild("Misc") and workspace.Misc:FindFirstChild("BrickAddition"),
         workspace:FindFirstChild("DefaultMap") and workspace.DefaultMap:FindFirstChild("Walls"),
+
+workspace:FindFirstChild("MarsMap") and workspace.MarsMap:FindFirstChild("Walls"),
+
+workspace:FindFirstChild("MarsMap") and workspace.MarsMap:FindFirstChild("RightWalls"),
         
         -- 🔥 UPDATE SAN VALENTÍN 🔥
         workspace:FindFirstChild("ValentinesMap") and workspace.ValentinesMap:FindFirstChild("RightWalls"),
