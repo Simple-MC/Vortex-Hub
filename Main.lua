@@ -59,7 +59,7 @@ Window:EditOpenButton({
     ),
     OnlyMobile = false,
     Enabled = true,
-    Draggable = true,
+    Draggable = true
 })
 
 WindUI:Notify({
