@@ -19,7 +19,7 @@ local function LoadModule(name)
 end
 
 -- DEFINICIÓN DE TABS
-_G.MainTab = Window:Tab({ Title = "main", Icon = "house" }) -- Timers, Local Player
+_G.MainTab = Window:Tab({ Title = "Main", Icon = "house" }) -- Timers, Local Player
 _G.EspTab = Window:Tab({ Title = "Visuals", Icon = "eye" })    -- ESP Brainrots/LuckyBlocks
 _G.UtilitiesTab = Window:Tab({ Title = "Utilities", Icon = "code-xml" }) -- VIP, Prompts
 _G.AutoFarmTab = Window:Tab({ Title = "Auto Farm", Icon = "zap" }) -- AUTO FARM 
@@ -38,6 +38,15 @@ LoadModule("Utilities")  -- VIP y Prompts
 LoadModule("AutoCollect")
 LoadModule("Settings")
 LoadModule("Sectionex") 
+
+local Keybind = _G.MainTab:Keybind({
+    Title = "Keybind",
+    Desc = "Keybind to open ui",
+    Value = "G",
+    Callback = function(v)
+        Window:SetToggleKey(Enum.KeyCode[v])
+    end
+})
 
 WindUI:Notify({
     Title = "VORTEX HUB",
