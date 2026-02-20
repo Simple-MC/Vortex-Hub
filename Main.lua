@@ -48,6 +48,20 @@ local Keybind = _G.MainTab:Keybind({
     end
 })
 
+Window:EditOpenButton({
+    Title = "Vortex Hub",
+    Icon = "monitor",
+    CornerRadius = UDim.new(0,16),
+    StrokeThickness = 2,
+    Color = ColorSequence.new( -- gradient
+        Color3.fromHex("FF0F7B"), 
+        Color3.fromHex("F89B29")
+    ),
+    OnlyMobile = false,
+    Enabled = true,
+    Draggable = true,
+})
+
 WindUI:Notify({
     Title = "VORTEX HUB",
     Content = "Sistema cargado. ¡A farmear!",
