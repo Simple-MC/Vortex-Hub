@@ -21,7 +21,7 @@ local AlturaSegura = 3
 local BetaConfig = {
     Enabled = false,
     RespawnOnStart = false,
-    Speed = 2000, -- 🚀 MÁXIMA VELOCIDAD POSIBLE
+    Speed = 2500, -- 🚀 MÁXIMA VELOCIDAD POSIBLE
     ActiveFolders = {}, 
     Targets = { LuckyBlocks = false, Brainrots = false },
     Sel = { Lucky = {}, Brain = {} }
