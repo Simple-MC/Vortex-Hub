@@ -9,49 +9,44 @@ local Player = game.Players.LocalPlayer
 
 -- --- [ 1. FREE VIP & WALL BYPASS ] ---
 _G.VIPEnabled = false
+local Almacen = game:GetService("Lighting")
+local MapaAlmacenado = {} -- Tabla para recordar el origen de cada carpeta VIP
+
 Section:Toggle({
-    Title = "Desbloquear VIP (Free VIP)",
+    Title = "Desbloquear VIP (Mover a Almacén)",
     Callback = function(state)
         _G.VIPEnabled = state
+        
+        -- Lista de las rutas de los mapas
+        local rutasMapas = {
+            workspace:FindFirstChild("DefaultMap_SharedInstances"),
+            workspace:FindFirstChild("MoneyMap_SharedInstances"),
+            workspace:FindFirstChild("MarsMap_SharedInstances"),
+            workspace:FindFirstChild("RadioactiveMap_SharedInstances"),
+            workspace:FindFirstChild("ArcadeMap_SharedInstances")
+        }
+
         if state then
-            task.spawn(function()
-                while _G.VIPEnabled do
-                    pcall(function()
-                        -- Lista de nombres de carpetas donde suelen estar los muros VIP
-                        local vipFolders = {
-                            "DefaultMap_SharedInstances", 
-                            "MoneyMap_SharedInstances", 
-                            "MarsMap_SharedInstances", 
-                            "RadioactiveMap_SharedInstances", 
-                            "ArcadeMap_SharedInstances"
-                        }
-                        
-                        for _, folderName in pairs(vipFolders) do
-                            local folder = workspace:FindFirstChild(folderName)
-                            if folder then
-                                -- Buscamos modelos o partes llamadas VIP, Wall, o Mud
-                                for _, obj in pairs(folder:GetDescendants()) do
-                                    if obj:IsA("BasePart") and (obj.Name:find("VIP") or obj.Name:find("Wall") or obj.Name:find("Mud")) then
-                                        obj.CanCollide = false
-                                        obj.Transparency = 0.5 -- Para saber que el hack está activo
-                                    end
-                                end
-                            end
-                        end
-                    end)
-                    task.wait(2) -- No necesita ser tan rápido para ahorrar CPU
-                end
-            end)
-        else
-            -- Al apagar, intentamos restaurar colisiones (opcional)
-            pcall(function()
-                for _, v in pairs(workspace:GetDescendants()) do
-                    if v:IsA("BasePart") and (v.Name:find("VIP") or v.Name:find("Wall")) then
-                        v.CanCollide = true
-                        v.Transparency = 0
+            -- --- MODO ACTIVADO: Enviar a Lighting ---
+            for _, mapa in pairs(rutasMapas) do
+                if mapa then
+                    local vipWalls = mapa:FindFirstChild("VIPWalls")
+                    if vipWalls then
+                        -- Guardamos quién es su "papá" original antes de moverlo
+                        MapaAlmacenado[vipWalls] = mapa
+                        vipWalls.Parent = Almacen
                     end
                 end
-            end)
+            end
+        else
+            -- --- MODO DESACTIVADO: Regresar a su mapa ---
+            for objetoVip, destinoOriginal in pairs(MapaAlmacenado) do
+                if objetoVip and destinoOriginal then
+                    objetoVip.Parent = destinoOriginal
+                end
+            end
+            -- Limpiamos la tabla para que no ocupe memoria
+            MapaAlmacenado = {}
         end
     end
 })
