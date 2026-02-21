@@ -1,5 +1,5 @@
 -- =================================================================
--- 🚀 MODULE: AUTO-COLLECT (BETA) - REBORN + PUNTO A/B + GLOBAL GOD MODE
+-- 🚀 MODULE: AUTO-COLLECT (BETA) - TRUE L-SHAPE + 2 SEC SPAM + RESPAWN OPTION
 -- =================================================================
 
 local AutoFarmBTab = _G.AutoFarmBTab
@@ -10,8 +10,8 @@ local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- --- [ CONFIGURACIÓN DE PUNTOS ] ---
-local PuntoA = CFrame.new(4345, 3, -140) -- Final del mapa
-local PuntoB = CFrame.new(145, 3, -140)  -- Inicio y ZONA SEGURA DE DESCARGA
+local PuntoA = CFrame.new(4345, 3, -140)
+local PuntoB = CFrame.new(145, 3, -140)
 
 local RielSeguroZ = -140
 local RielMinX = 145
@@ -20,7 +20,8 @@ local AlturaSegura = 3
 
 local BetaConfig = {
     Enabled = false,
-    Speed = 800, -- 🚀 Velocidad absurda y lineal
+    RespawnOnStart = false, -- Nuevo botón de renacer
+    Speed = 800,
     ActiveFolders = {}, 
     Targets = { LuckyBlocks = false, Brainrots = false },
     Sel = { Lucky = {}, Brain = {} }
@@ -49,7 +50,6 @@ local function GetNames(folder)
     return n
 end
 
--- 🎒 CUENTA LA CARGA PESADA EN LA ESPALDA
 local function ContarCargaActual()
     local char = LocalPlayer.Character
     local count = 0
@@ -68,7 +68,6 @@ local function BetaFlyTo(TargetCFrame)
     local root = GetRoot()
     if not root then return end
 
-    -- 🛡️ ANTI-CAÍDAS: Anclamos al jugador para ignorar la gravedad
     root.Anchored = true 
 
     local Dist = (root.Position - TargetCFrame.Position).Magnitude
@@ -117,7 +116,6 @@ local function GetBetaTarget()
     if not root then return nil end
     local List = {}
 
-    -- 1. Eventos Ligeros
     for _, folderName in ipairs(EventParts) do
         if BetaConfig.ActiveFolders[folderName] then
             local f = workspace:FindFirstChild(folderName)
@@ -125,7 +123,6 @@ local function GetBetaTarget()
         end
     end
 
-    -- 2. Lucky Blocks
     if BetaConfig.Targets.LuckyBlocks then
         local f = workspace:FindFirstChild("ActiveLuckyBlocks")
         if f then 
@@ -139,7 +136,6 @@ local function GetBetaTarget()
         end
     end
 
-    -- 3. Brainrots
     if BetaConfig.Targets.Brainrots then
         local f = workspace:FindFirstChild("ActiveBrainrots")
         if f then 
@@ -174,7 +170,14 @@ end
 AutoFarmBTab:Section({ Title = "--[ L-SHAPE HIT & RUN ]--", Icon = "skull" })
 
 AutoFarmBTab:Toggle({
-    Title = "⚡ Activar Hit & Run (+Inv +GodMode)",
+    Title = "💀 Renacer al Encender (Llegar más rápido)",
+    Callback = function(state)
+        BetaConfig.RespawnOnStart = state
+    end
+})
+
+AutoFarmBTab:Toggle({
+    Title = "⚡ Activar Hit & Run Perfecto",
     Callback = function(state)
         BetaConfig.Enabled = state
         
@@ -182,17 +185,17 @@ AutoFarmBTab:Toggle({
             Processed = {} 
             IsDoingSequence = false
             
-            -- 💀 REINICIO ESTRATÉGICO
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-                LocalPlayer.Character.Humanoid.Health = 0 -- Nos reiniciamos para aparecer cerca de PuntoB
-                LocalPlayer.CharacterAdded:Wait() -- El script se pausa hasta que revivamos
-                task.wait(1) -- Un segundito extra para que el mapa termine de cargar
+            -- 🔥 NUEVA LÓGICA DE REINICIO
+            if BetaConfig.RespawnOnStart then
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                    LocalPlayer.Character.Humanoid.Health = 0 
+                    LocalPlayer.CharacterAdded:Wait() 
+                    task.wait(1.5) -- Tiempo de gracia para cargar el mapa
+                end
             end
             
-            -- Si apagaste el toggle mientras estabas muerto, cancelamos
             if not BetaConfig.Enabled then return end
 
-            -- 🔥 CONEXIÓN GLOBAL
             if _G.GodModeEnabled == false and _G.ActivarGodModeTotal then
                 _G.ActivarGodModeTotal(true)
             end
@@ -204,12 +207,10 @@ AutoFarmBTab:Toggle({
                             local root = GetRoot()
                             if not root or LocalPlayer.Character.Humanoid.Health <= 0 then return end
 
-                            -- 🎒 LÍMITE DE INVENTARIO (MAX 3)
                             if ContarCargaActual() >= 3 then
                                 IsDoingSequence = true
-                                -- Viaje rápido a PuntoB (Base)
                                 BetaFlyTo(PuntoB) 
-                                task.wait(1.5) -- Esperar a descargar
+                                task.wait(1.5) 
                                 Processed = {} 
                                 IsDoingSequence = false
                                 return 
@@ -225,30 +226,44 @@ AutoFarmBTab:Toggle({
                                     IsDoingSequence = true 
                                     
                                     task.spawn(function()
+                                        local MiXActual = root.Position.X
                                         local TargetX = math.clamp(MovePart.Position.X, RielMinX, RielMaxX)
+                                        
+                                        local PuntoEntradaRiel = CFrame.new(MiXActual, AlturaSegura, RielSeguroZ)
                                         local PuntoDeAtaque = CFrame.new(TargetX, AlturaSegura, RielSeguroZ)
 
-                                        -- 1. RIEL: Alinearse
+                                        -- 1. VERDADERA FORMA DE L: Si estamos lejos del riel, primero retroceder al riel
+                                        if math.abs(root.Position.Z - RielSeguroZ) > 10 then
+                                            BetaFlyTo(PuntoEntradaRiel)
+                                        end
+
+                                        -- 2. Ahora que estamos en el riel seguro, nos alineamos en X
                                         BetaFlyTo(PuntoDeAtaque)
 
-                                        -- 2. ESPERA TÁCTICA
+                                        -- 3. ESPERA TÁCTICA
                                         while BetaConfig.Enabled and OlaEnCamino(TargetX) do
                                             task.wait(0.1) 
                                         end
 
-                                        -- 3. ATAQUE
+                                        -- 4. ATAQUE RECTO
                                         if BetaConfig.Enabled then
                                             BetaFlyTo(MovePart.CFrame)
                                             
-                                            if Prompt then
-                                                Prompt.RequiresLineOfSight = false
-                                                Prompt.HoldDuration = 0
-                                                for i = 1, 15 do fireproximityprompt(Prompt) end
-                                                Processed[Target] = true
-                                                task.wait(0.15) 
+                                            -- 5. RECOLECCIÓN (2 Segundos Exactos de Spam)
+                                            local tiempoSpam = 0
+                                            while BetaConfig.Enabled and tiempoSpam < 2 do
+                                                if Prompt then
+                                                    Prompt.RequiresLineOfSight = false
+                                                    Prompt.HoldDuration = 0
+                                                    fireproximityprompt(Prompt)
+                                                end
+                                                task.wait(0.1)
+                                                tiempoSpam = tiempoSpam + 0.1
                                             end
                                             
-                                            -- 4. ESCAPE AL HILO
+                                            Processed[Target] = true
+                                            
+                                            -- 6. ESCAPE AL HILO EN LÍNEA RECTA
                                             BetaFlyTo(PuntoDeAtaque)
                                         end
                                         
@@ -256,7 +271,7 @@ AutoFarmBTab:Toggle({
                                     end)
                                 end
                             else
-                                -- PATRULLAJE: Ir al Punto B (Base) a esperar si no hay nada
+                                -- PATRULLAJE
                                 if (root.Position - PuntoB.Position).Magnitude > 50 then
                                     BetaFlyTo(PuntoB)
                                 end
@@ -276,7 +291,6 @@ AutoFarmBTab:Toggle({
             end)
             
         else
-            -- ❌ APAGADO Y RESTAURACIÓN
             if BetaTween then BetaTween:Cancel() end
             IsBetaFlying = false
             IsDoingSequence = false
