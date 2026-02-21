@@ -1,13 +1,14 @@
 --[[
     MODULE: VORTEX GOD MODE & WALL BYPASS (Combat.lua)
-    FEATURES: Dynamic Folder Cleaning, VIP/Wall Bypass to Lighting, Custom Borders
+    FEATURES: Dynamic Folder Cleaning, VIP/Wall Bypass to Lighting, Custom Borders, GLOBAL READY
 ]]
 
 local AlmacenTemporal = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
-local GodModeEnabled = false
+-- === VARIABLES GLOBALES Y ALMACENAMIENTO ===
+_G.GodModeEnabled = false -- Ahora es accesible desde otros scripts
 local OriginalParents = {}
 local OriginalMudData = {}
 local BordesEstructura = {}
@@ -36,22 +37,39 @@ local function ObtenerCosasQueEstorban()
 end
 
 -- ==========================================
--- 🛠️ FUNCIONES DE MOVIMIENTO SEGURO
+-- 🛠️ CONFIGURACIÓN DE BORDES
+-- ==========================================
+local configBordes = {
+    {nombre = "B1", size = Vector3.new(90, 2.7, 2048), cf = CFrame.new(1177, 0, -143, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "B2", size = Vector3.new(90, 2.7, 2048), cf = CFrame.new(1917, 0, -143, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "B3", size = Vector3.new(4, 13, 2048), cf = CFrame.new(1177, -2, -136, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "B4", size = Vector3.new(4, 13, 2048), cf = CFrame.new(1917, -2, -136, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "Borde5", size = Vector3.new(4, 13, 2048), cf = CFrame.new(1177, -2, 136, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "Borde6", size = Vector3.new(90, 2.7, 2048), cf = CFrame.new(1179, 0, 142.5, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "Borde7", size = Vector3.new(4, 13, 2048), cf = CFrame.new(1917, -2, 135.5, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "Borde8", size = Vector3.new(90, 2.7, 2048), cf = CFrame.new(1917, 0, 142.5, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "Borde9", size = Vector3.new(4, 13, 1409.5), cf = CFrame.new(3645.5, -2, -136, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "Borde10", size = Vector3.new(90, 2.700000047683716, 1409.5), cf = CFrame.new(3645.5, 0, -143, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "Borde11", size = Vector3.new(4, 13, 1409.5), cf = CFrame.new(3645.5, -2, 136, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "Borde12", size = Vector3.new(90, 2.700000047683716, 1409.5), cf = CFrame.new(3645.5, 0, 142.5, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
+    {nombre = "Borde13", size = Vector3.new(6, 90, 284), cf = CFrame.new(4353, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)}
+}
+
+-- ==========================================
+-- 🛠️ FUNCIONES DE MOVIMIENTO Y RESTAURACIÓN
 -- ==========================================
 local function SafeMove(obj, newParent)
     if obj and not OriginalParents[obj] then
-        -- Guarda el padre original la PRIMERA vez que lo mueve
         OriginalParents[obj] = obj.Parent
     end
     if obj then obj.Parent = newParent end
 end
 
 local function RestoreAll()
-    -- Regresa todo lo que está en el almacén a su lugar original
     for obj, parent in pairs(OriginalParents) do
         pcall(function() if obj then obj.Parent = parent end end)
     end
-    OriginalParents = {} -- Limpiamos memoria
+    OriginalParents = {} 
     
     for obj, data in pairs(OriginalMudData) do
         pcall(function()
@@ -84,97 +102,81 @@ local function RestoreAll()
 end
 
 -- ==========================================
--- 🛠️ CONFIGURACIÓN DE BORDES
+-- 🔥 LA FUNCIÓN MÁGICA GLOBAL 🔥
 -- ==========================================
-local configBordes = {
-    {nombre = "B1", size = Vector3.new(90, 2.7, 2048), cf = CFrame.new(1177, 0, -143, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
-    {nombre = "B2", size = Vector3.new(90, 2.7, 2048), cf = CFrame.new(1917, 0, -143, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
-    {nombre = "B3", size = Vector3.new(4, 13, 2048), cf = CFrame.new(1177, -2, -136, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
-    {nombre = "B4", size = Vector3.new(4, 13, 2048), cf = CFrame.new(1917, -2, -136, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
-    {nombre = "Borde5", size = Vector3.new(4, 13, 2048), cf = CFrame.new(1177, -2, 136, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
-    {nombre = "Borde6", size = Vector3.new(90, 2.7, 2048), cf = CFrame.new(1179, 0, 142.5, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
-    {nombre = "Borde7", size = Vector3.new(4, 13, 2048), cf = CFrame.new(1917, -2, 135.5, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
-    {nombre = "Borde8", size = Vector3.new(90, 2.7, 2048), cf = CFrame.new(1917, 0, 142.5, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
-    {nombre = "Borde9", size = Vector3.new(4, 13, 1409.5), cf = CFrame.new(3645.5, -2, -136, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
-    {nombre = "Borde10", size = Vector3.new(90, 2.700000047683716, 1409.5), cf = CFrame.new(3645.5, 0, -143, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
-    {nombre = "Borde11", size = Vector3.new(4, 13, 1409.5), cf = CFrame.new(3645.5, -2, 136, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
-    {nombre = "Borde12", size = Vector3.new(90, 2.700000047683716, 1409.5), cf = CFrame.new(3645.5, 0, 142.5, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
-    {nombre = "Borde13", size = Vector3.new(6, 90, 284), cf = CFrame.new(4353, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)}
-}
-
--- ==========================================
--- 🛠️ INTERFAZ DE USUARIO (TOGGLE)
--- ==========================================
-_G.AutoFarmTab:Section({ Title = "--[ GOD MODE & PROTECCIÓN ]--", Icon = "shield" })
-
-_G.AutoFarmTab:Toggle({
-    Title = "🔥 Activate God Mode Total (+VIP)",
-    Callback = function(state)
-        GodModeEnabled = state
-        
-        if GodModeEnabled then
-            -- === BUCLE PRINCIPAL (Escanea cambios de mapa constantemente) ===
-            task.spawn(function()
-                while GodModeEnabled do
-                    pcall(function()
-                        
-                        -- 1. LIMPIA BASURA (Actualiza si cargan mapas nuevos)
-                        local listaBasura = ObtenerCosasQueEstorban()
-                        for _, objetoEnMedio in pairs(listaBasura) do
-                            if objetoEnMedio then
-                                SafeMove(objetoEnMedio, AlmacenTemporal)
-                            end
+_G.ActivarGodModeTotal = function(state)
+    _G.GodModeEnabled = state
+    
+    if state then
+        -- === BUCLE DE LIMPIEZA CONTINUA ===
+        task.spawn(function()
+            while _G.GodModeEnabled do
+                pcall(function()
+                    -- 1. LIMPIA BASURA
+                    local listaBasura = ObtenerCosasQueEstorban()
+                    for _, objetoEnMedio in pairs(listaBasura) do
+                        if objetoEnMedio then
+                            SafeMove(objetoEnMedio, AlmacenTemporal)
                         end
+                    end
 
-                        -- 2. FREE VIP & WALLS (Actualiza si cargan mapas nuevos)
-                        local vipFolders = {
-                            "DefaultMap_SharedInstances", 
-                            "MoneyMap_SharedInstances", 
-                            "MarsMap_SharedInstances", 
-                            "RadioactiveMap_SharedInstances", 
-                            "ArcadeMap_SharedInstances",
-                            "ValentinesMap_SharedInstances"
-                        }
+                    -- 2. FREE VIP & WALLS
+                    local vipFolders = {
+                        "DefaultMap_SharedInstances", "MoneyMap_SharedInstances", 
+                        "MarsMap_SharedInstances", "RadioactiveMap_SharedInstances", 
+                        "ArcadeMap_SharedInstances", "ValentinesMap_SharedInstances"
+                    }
 
-                        for _, folderName in pairs(vipFolders) do
-                            local folder = workspace:FindFirstChild(folderName)
-                            if folder then
-                                -- Mover la carpeta VIPWalls entera al almacén si aparece
-                                local vipWalls = folder:FindFirstChild("VIPWalls")
-                                if vipWalls then
-                                    SafeMove(vipWalls, AlmacenTemporal)
-                                end
-                                
-                                -- Revisar piezas sueltas que puedan estorbar
-                                for _, obj in pairs(folder:GetDescendants()) do
-                                    if obj:IsA("BasePart") and (obj.Name:find("VIP") or obj.Name:find("Wall") or obj.Name:find("Mud")) then
-                                        obj.CanCollide = false
-                                        obj.Transparency = 0.5
-                                    end
+                    for _, folderName in pairs(vipFolders) do
+                        local folder = workspace:FindFirstChild(folderName)
+                        if folder then
+                            local vipWalls = folder:FindFirstChild("VIPWalls")
+                            if vipWalls then
+                                SafeMove(vipWalls, AlmacenTemporal)
+                            end
+                            
+                            for _, obj in pairs(folder:GetDescendants()) do
+                                if obj:IsA("BasePart") and (obj.Name:find("VIP") or obj.Name:find("Wall") or obj.Name:find("Mud")) then
+                                    obj.CanCollide = false
+                                    obj.Transparency = 0.5
                                 end
                             end
                         end
-                        
-                    end)
-                    task.wait(0.5) -- Pausa de medio segundo para no saturar el juego
-                end
-            end)
+                    end
+                end)
+                task.wait(0.5)
+            end
+        end)
 
-            -- Crear bordes rojos de protección (Esto no necesita bucle)
+        -- === CREAR BORDES (Solo si no existen) ===
+        if #BordesEstructura == 0 then
             for _, d in ipairs(configBordes) do
                 local p = Instance.new("Part", workspace)
                 p.Name = d.nombre; p.Size = d.size; p.CFrame = d.cf; p.Anchored = true; p.CanCollide = true
                 p.Color = Color3.fromRGB(255, 60, 60); p.Material = Enum.Material.Neon; p.Transparency = 0.35
                 table.insert(BordesEstructura, p)
             end
-            
-        else
-            -- === APAGAR GOD MODE ===
-            RestoreAll() -- Devuelve todo a la normalidad
-            for _, b in pairs(BordesEstructura) do 
-                if b then b:Destroy() end 
-            end
-            BordesEstructura = {}
         end
+        
+    else
+        -- === APAGAR GOD MODE ===
+        RestoreAll() 
+        for _, b in pairs(BordesEstructura) do 
+            if b then b:Destroy() end 
+        end
+        BordesEstructura = {}
+    end
+end
+
+-- ==========================================
+-- 🛠️ INTERFAZ DE USUARIO (TOGGLE EN MENÚ)
+-- ==========================================
+_G.AutoFarmTab:Section({ Title = "--[ GOD MODE & PROTECCIÓN ]--", Icon = "shield" })
+
+_G.AutoFarmTab:Toggle({
+    Title = "🔥 Activate God Mode Total (+VIP)",
+    Callback = function(state)
+        -- Llamamos a la función global que acabamos de crear
+        _G.ActivarGodModeTotal(state)
     end
 })
