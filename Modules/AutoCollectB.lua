@@ -1,5 +1,5 @@
 -- =================================================================
--- 🚀 MODULE: AUTO-COLLECT (BETA) - HIT & RUN ESTRICTO (L-SHAPE)
+-- 🚀 MODULE: AUTO-COLLECT (BETA) - REBORN + PUNTO A/B + GLOBAL GOD MODE
 -- =================================================================
 
 local AutoFarmBTab = _G.AutoFarmBTab
@@ -8,9 +8,11 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local AlmacenTemporal = game:GetService("Lighting")
 
--- --- [ CONFIGURACIÓN DEL HILO ] ---
+-- --- [ CONFIGURACIÓN DE PUNTOS ] ---
+local PuntoA = CFrame.new(4345, 3, -140) -- Final del mapa
+local PuntoB = CFrame.new(145, 3, -140)  -- Inicio y ZONA SEGURA DE DESCARGA
+
 local RielSeguroZ = -140
 local RielMinX = 145
 local RielMaxX = 4345
@@ -18,7 +20,7 @@ local AlturaSegura = 3
 
 local BetaConfig = {
     Enabled = false,
-    Speed = 400, -- Aumenté un poco la velocidad para el escape rápido
+    Speed = 800, -- 🚀 Velocidad absurda y lineal
     ActiveFolders = {}, 
     Targets = { LuckyBlocks = false, Brainrots = false },
     Sel = { Lucky = {}, Brain = {} }
@@ -26,19 +28,17 @@ local BetaConfig = {
 
 local BetaTween = nil
 local IsBetaFlying = false
-local IsDoingSequence = false -- ESTO ES VITAL: Evita que corte camino en diagonal
+local IsDoingSequence = false
 local Processed = {}
-local OriginalParents = {}
-local BordesEstructura = {}
 
 local EventParts = {
     "ArcadeEventTickets", "ArcadeEventConsoles", "MoneyEventParts",
     "UFOEventParts", "CandyEventParts", "ValentinesCoinParts"
 }
 
--- --- [ UTILIDADES ] ---
-local function GetRoot()
-    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+-- --- [ FUNCIONES VITALES ] ---
+local function GetRoot() 
+    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") 
 end
 
 local function GetNames(folder)
@@ -49,14 +49,31 @@ local function GetNames(folder)
     return n
 end
 
--- --- [ MOTOR DE VUELO ESTRICTO ] ---
+-- 🎒 CUENTA LA CARGA PESADA EN LA ESPALDA
+local function ContarCargaActual()
+    local char = LocalPlayer.Character
+    local count = 0
+    if char then
+        for _, v in pairs(char:GetChildren()) do
+            if v:IsA("Model") and (v.Name:find("Lucky") or v.Name:find("Brainrot") or v.Name:find("NaturalSpawn")) then
+                count = count + 1
+            end
+        end
+    end
+    return count
+end
+
+-- --- [ VUELO TÁCTICO (ANTI-CAÍDAS) ] ---
 local function BetaFlyTo(TargetCFrame)
     local root = GetRoot()
     if not root then return end
 
+    -- 🛡️ ANTI-CAÍDAS: Anclamos al jugador para ignorar la gravedad
+    root.Anchored = true 
+
     local Dist = (root.Position - TargetCFrame.Position).Magnitude
     local Time = Dist / BetaConfig.Speed
-    if Time < 0.05 then Time = 0.05 end -- Tiempo mínimo para no glitchear
+    if Time < 0.05 then Time = 0.05 end
 
     if BetaTween then BetaTween:Cancel() end
     IsBetaFlying = true
@@ -64,7 +81,6 @@ local function BetaFlyTo(TargetCFrame)
     BetaTween = TweenService:Create(root, TweenInfo.new(Time, Enum.EasingStyle.Linear), {CFrame = CFrame.new(TargetCFrame.Position)})
     BetaTween:Play()
     
-    -- Espera inteligente (se cancela si te mueres o apagas el hack)
     local elapsed = 0
     while IsBetaFlying and elapsed < Time do
         if not BetaConfig.Enabled or not GetRoot() or LocalPlayer.Character.Humanoid.Health <= 0 then
@@ -77,38 +93,31 @@ local function BetaFlyTo(TargetCFrame)
     end
     
     IsBetaFlying = false
-    if GetRoot() then
-        GetRoot().Velocity = Vector3.zero
-        GetRoot().RotVelocity = Vector3.zero
-    end
 end
 
--- --- [ DETECTOR DE TSUNAMIS MEJORADO ] ---
+-- --- [ DETECTOR TSUNAMIS (EN EJE X) ] ---
 local function OlaEnCamino(TargetX)
     local folder = workspace:FindFirstChild("ActiveTsunamis")
     if not folder then return false end
-
-    local MargenPeligro = 70 -- Distancia de peligro a los lados de tu pasillo de ataque
+    local MargenPeligro = 70 
 
     for _, wave in pairs(folder:GetChildren()) do
         local p = wave:IsA("BasePart") and wave or wave:FindFirstChildWhichIsA("BasePart", true)
-        if p then
-            -- Si la ola está cruzando por tu coordenada X objetivo, es peligroso entrar
-            if math.abs(p.Position.X - TargetX) < MargenPeligro then
-                return true
-            end
+        if p and math.abs(p.Position.X - TargetX) < MargenPeligro then
+            return true
         end
     end
     return false
 end
 
--- --- [ ESCÁNER DE OBJETIVOS ] ---
+-- --- [ ESCÁNER ] ---
 local function GetBetaTarget()
     local c, sd = nil, math.huge
     local root = GetRoot()
     if not root then return nil end
     local List = {}
 
+    -- 1. Eventos Ligeros
     for _, folderName in ipairs(EventParts) do
         if BetaConfig.ActiveFolders[folderName] then
             local f = workspace:FindFirstChild(folderName)
@@ -116,6 +125,7 @@ local function GetBetaTarget()
         end
     end
 
+    -- 2. Lucky Blocks
     if BetaConfig.Targets.LuckyBlocks then
         local f = workspace:FindFirstChild("ActiveLuckyBlocks")
         if f then 
@@ -129,6 +139,7 @@ local function GetBetaTarget()
         end
     end
 
+    -- 3. Brainrots
     if BetaConfig.Targets.Brainrots then
         local f = workspace:FindFirstChild("ActiveBrainrots")
         if f then 
@@ -157,72 +168,52 @@ local function GetBetaTarget()
     return c
 end
 
--- --- [ GOD MODE INTEGRADO ] ---
-local function SafeMoveBeta(obj, newParent)
-    if obj and not OriginalParents[obj] then OriginalParents[obj] = obj.Parent end
-    if obj then obj.Parent = newParent end
-end
-
-local function ActivarGodModeLocal()
-    local vipFolders = {
-        "DefaultMap_SharedInstances", "MoneyMap_SharedInstances", 
-        "MarsMap_SharedInstances", "RadioactiveMap_SharedInstances", 
-        "ArcadeMap_SharedInstances", "ValentinesMap_SharedInstances"
-    }
-    for _, folderName in pairs(vipFolders) do
-        local folder = workspace:FindFirstChild(folderName)
-        if folder then
-            local vipWalls = folder:FindFirstChild("VIPWalls")
-            if vipWalls then SafeMoveBeta(vipWalls, AlmacenTemporal) end
-        end
-    end
-
-    -- Crea los 13 bordes protectores aquí
-    local configBordes = {
-        {nombre="B1", size=Vector3.new(90, 2.7, 2048), cf=CFrame.new(1177, 0, -143, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
-        {nombre="B9", size=Vector3.new(4, 13, 1409.5), cf=CFrame.new(3645.5, -2, -136, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)}
-        -- PON EL RESTO DE TUS BORDES AQUÍ
-    }
-    for _, d in ipairs(configBordes) do
-        local p = Instance.new("Part", workspace)
-        p.Name = d.nombre; p.Size = d.size; p.CFrame = d.cf; p.Anchored = true; p.CanCollide = true
-        p.Color = Color3.fromRGB(255, 60, 60); p.Material = Enum.Material.Neon; p.Transparency = 0.35
-        table.insert(BordesEstructura, p)
-    end
-end
-
-local function DesactivarGodModeLocal()
-    for obj, parent in pairs(OriginalParents) do
-        pcall(function() if obj then obj.Parent = parent end end)
-    end
-    OriginalParents = {}
-    for _, b in pairs(BordesEstructura) do if b then b:Destroy() end end
-    BordesEstructura = {}
-end
-
 -- =================================================================
 -- 🎨 INTERFAZ GRÁFICA Y BUCLE PRINCIPAL
 -- =================================================================
-
 AutoFarmBTab:Section({ Title = "--[ L-SHAPE HIT & RUN ]--", Icon = "skull" })
 
 AutoFarmBTab:Toggle({
-    Title = "⚡ Activar Hit & Run Perfecto",
+    Title = "⚡ Activar Hit & Run (+Inv +GodMode)",
     Callback = function(state)
         BetaConfig.Enabled = state
         
         if state then
             Processed = {} 
             IsDoingSequence = false
-            ActivarGodModeLocal() 
+            
+            -- 💀 REINICIO ESTRATÉGICO
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                LocalPlayer.Character.Humanoid.Health = 0 -- Nos reiniciamos para aparecer cerca de PuntoB
+                LocalPlayer.CharacterAdded:Wait() -- El script se pausa hasta que revivamos
+                task.wait(1) -- Un segundito extra para que el mapa termine de cargar
+            end
+            
+            -- Si apagaste el toggle mientras estabas muerto, cancelamos
+            if not BetaConfig.Enabled then return end
+
+            -- 🔥 CONEXIÓN GLOBAL
+            if _G.GodModeEnabled == false and _G.ActivarGodModeTotal then
+                _G.ActivarGodModeTotal(true)
+            end
             
             task.spawn(function()
                 while BetaConfig.Enabled do
                     pcall(function()
-                        -- Solo buscar un nuevo target si NO estamos a mitad de un escape
                         if not IsDoingSequence then
                             local root = GetRoot()
                             if not root or LocalPlayer.Character.Humanoid.Health <= 0 then return end
+
+                            -- 🎒 LÍMITE DE INVENTARIO (MAX 3)
+                            if ContarCargaActual() >= 3 then
+                                IsDoingSequence = true
+                                -- Viaje rápido a PuntoB (Base)
+                                BetaFlyTo(PuntoB) 
+                                task.wait(1.5) -- Esperar a descargar
+                                Processed = {} 
+                                IsDoingSequence = false
+                                return 
+                            end
 
                             local Target = GetBetaTarget()
 
@@ -231,26 +222,24 @@ AutoFarmBTab:Toggle({
                                 local MovePart = Prompt and Prompt.Parent or Target:FindFirstChild("Root") or Target.PrimaryPart or Target:FindFirstChildWhichIsA("BasePart", true)
 
                                 if MovePart then
-                                    IsDoingSequence = true -- Bloqueamos el escáner para no crear líneas diagonales
+                                    IsDoingSequence = true 
                                     
                                     task.spawn(function()
                                         local TargetX = math.clamp(MovePart.Position.X, RielMinX, RielMaxX)
                                         local PuntoDeAtaque = CFrame.new(TargetX, AlturaSegura, RielSeguroZ)
 
-                                        -- 1. ALINEACIÓN: Moverse por el hilo seguro (Movimiento SOLO en X)
+                                        -- 1. RIEL: Alinearse
                                         BetaFlyTo(PuntoDeAtaque)
 
-                                        -- 2. ESPERA: Revisar si pasa una ola justo frente a nosotros
+                                        -- 2. ESPERA TÁCTICA
                                         while BetaConfig.Enabled and OlaEnCamino(TargetX) do
-                                            if GetRoot() then GetRoot().Velocity = Vector3.zero end
-                                            task.wait(0.1) -- Quedarse parado en el riel
+                                            task.wait(0.1) 
                                         end
 
-                                        -- 3. ATAQUE: Ir directo al ítem (Movimiento SOLO en Z)
+                                        -- 3. ATAQUE
                                         if BetaConfig.Enabled then
                                             BetaFlyTo(MovePart.CFrame)
                                             
-                                            -- SPAM para agarrar
                                             if Prompt then
                                                 Prompt.RequiresLineOfSight = false
                                                 Prompt.HoldDuration = 0
@@ -259,17 +248,18 @@ AutoFarmBTab:Toggle({
                                                 task.wait(0.15) 
                                             end
                                             
-                                            -- 4. RETIRADA: Volver inmediatamente a la misma X del hilo seguro
+                                            -- 4. ESCAPE AL HILO
                                             BetaFlyTo(PuntoDeAtaque)
                                         end
                                         
-                                        -- Desbloqueamos el escáner para buscar el siguiente
                                         IsDoingSequence = false
                                     end)
                                 end
                             else
-                                -- Si no hay nada, quédate parado en el riel para estar a salvo
-                                root.Velocity = Vector3.zero
+                                -- PATRULLAJE: Ir al Punto B (Base) a esperar si no hay nada
+                                if (root.Position - PuntoB.Position).Magnitude > 50 then
+                                    BetaFlyTo(PuntoB)
+                                end
                             end
                         end
                     end)
@@ -277,11 +267,8 @@ AutoFarmBTab:Toggle({
                 end
             end)
             
-            -- Estabilizador para volar sin fricción
             RunService:BindToRenderStep("BetaFlyStabilizer", 1, function()
-                if BetaConfig.Enabled and LocalPlayer.Character and IsBetaFlying then
-                    local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                    if hum then hum.PlatformStand = true end 
+                if BetaConfig.Enabled and LocalPlayer.Character then
                     for _,p in pairs(LocalPlayer.Character:GetDescendants()) do 
                         if p:IsA("BasePart") then p.CanCollide = false end 
                     end
@@ -289,12 +276,14 @@ AutoFarmBTab:Toggle({
             end)
             
         else
-            -- Apagar TODO
+            -- ❌ APAGADO Y RESTAURACIÓN
             if BetaTween then BetaTween:Cancel() end
             IsBetaFlying = false
             IsDoingSequence = false
             RunService:UnbindFromRenderStep("BetaFlyStabilizer")
-            DesactivarGodModeLocal()
+            
+            local root = GetRoot()
+            if root then root.Anchored = false end 
             
             if LocalPlayer.Character then
                 local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -311,13 +300,15 @@ AutoFarmBTab:Toggle({
 })
 
 -- --- [ SELECCIÓN DE ITEMS ] ---
-AutoFarmBTab:Section({ Title = "--[ FILTROS ]--" })
+AutoFarmBTab:Section({ Title = "--[ EVENTOS LIGEROS (Al toque) ]--" })
 AutoFarmBTab:Toggle({ Title = "Tickets 🎫", Callback = function(s) BetaConfig.ActiveFolders["ArcadeEventTickets"] = s end })
 AutoFarmBTab:Toggle({ Title = "Consoles 🎮", Callback = function(s) BetaConfig.ActiveFolders["ArcadeEventConsoles"] = s end })
 AutoFarmBTab:Toggle({ Title = "Gold Money 🪙", Callback = function(s) BetaConfig.ActiveFolders["MoneyEventParts"] = s end })
 AutoFarmBTab:Toggle({ Title = "UFO Money 👽", Callback = function(s) BetaConfig.ActiveFolders["UFOEventParts"] = s end })
 AutoFarmBTab:Toggle({ Title = "CANDYS 🍭", Callback = function(s) BetaConfig.ActiveFolders["CandyEventParts"] = s end })
 AutoFarmBTab:Toggle({ Title = "COINS 🍬", Callback = function(s) BetaConfig.ActiveFolders["ValentinesCoinParts"] = s end })
+
+AutoFarmBTab:Section({ Title = "--[ OBJETOS PESADOS (Límite 3) ]--" })
 AutoFarmBTab:Toggle({ Title = "Lucky Blocks", Callback = function(s) BetaConfig.Targets.LuckyBlocks = s end })
 AutoFarmBTab:Dropdown({ Title = "Lucky Filter", Multi = true, Values = GetNames("LuckyBlocks"), Callback = function(v) BetaConfig.Sel.Lucky = v end })
 AutoFarmBTab:Toggle({ Title = "Brainrots", Callback = function(s) BetaConfig.Targets.Brainrots = s end })
