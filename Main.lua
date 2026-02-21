@@ -39,6 +39,7 @@ LoadModule("Utilities")  -- VIP y Prompts
 LoadModule("AutoCollect")
 LoadModule("Settings")
 LoadModule("Sectionex") 
+LoadModule("AutoCollectB") 
 
 local Keybind = _G.MainTab:Keybind({
     Title = "Keybind",
