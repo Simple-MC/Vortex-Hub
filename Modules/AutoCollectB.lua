@@ -1,5 +1,5 @@
 -- =================================================================
--- 🚀 MODULE: AUTO-COLLECT (BETA) - TRUE HIT & RUN + TSUNAMI MATH
+-- 🚀 MODULE: AUTO-COLLECT (BETA) - ULTRA FAST + PERFECT MATH
 -- =================================================================
 
 local AutoFarmBTab = _G.AutoFarmBTab
@@ -11,7 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- --- [ CONFIGURACIÓN DE PUNTOS ] ---
 local PuntoA = CFrame.new(4345, 3, -140)
-local PuntoB = CFrame.new(145, 3, -140)
+local PuntoB = CFrame.new(145, 3, -140) -- SOLO PARA DESCARGAR 3 ITEMS
 
 local RielSeguroZ = -140
 local RielMinX = 145
@@ -21,7 +21,7 @@ local AlturaSegura = 3
 local BetaConfig = {
     Enabled = false,
     RespawnOnStart = false,
-    Speed = 800,
+    Speed = 1200, -- 🚀 MÁXIMA VELOCIDAD POSIBLE
     ActiveFolders = {}, 
     Targets = { LuckyBlocks = false, Brainrots = false },
     Sel = { Lucky = {}, Brain = {} }
@@ -63,7 +63,7 @@ local function ContarCargaActual()
     return count
 end
 
--- --- [ MOTOR ANTI-GRAVEDAD ] ---
+-- --- [ MOTOR ANTI-GRAVEDAD A PRUEBA DE FALLOS ] ---
 local function EnsureAntiGravity()
     local root = GetRoot()
     if root then
@@ -78,17 +78,18 @@ local function EnsureAntiGravity()
 end
 
 local function RemoveAntiGravity()
-    local root = GetRoot()
-    if root then
-        for _, v in pairs(root:GetChildren()) do
-            if v.Name == "BetaAntiGravity" then
+    local char = LocalPlayer.Character
+    if char then
+        -- Búsqueda forzada en todo el personaje para que no se quede pegado
+        for _, v in pairs(char:GetDescendants()) do
+            if v:IsA("BodyVelocity") and v.Name == "BetaAntiGravity" then
                 v:Destroy()
             end
         end
     end
 end
 
--- --- [ VUELO TÁCTICO ] ---
+-- --- [ VUELO TÁCTICO EXTREMO ] ---
 local function BetaFlyTo(TargetCFrame)
     local root = GetRoot()
     if not root then return end
@@ -112,8 +113,8 @@ local function BetaFlyTo(TargetCFrame)
             IsBetaFlying = false
             return
         end
-        task.wait(0.05)
-        elapsed = elapsed + 0.05
+        task.wait() -- Usamos el tiempo mínimo absoluto de Roblox
+        elapsed = elapsed + 0.015
     end
     
     IsBetaFlying = false
@@ -127,11 +128,11 @@ local function EsSeguroMatematico(TargetX, TargetZ)
     local root = GetRoot()
     if not root then return false end
 
-    -- 1. Calcular Nuestro Tiempo (Ida + Vuelta + Recoger)
+    -- 1. Nuestro Tiempo (Vuelo rapidísimo + 0.1s de recoger)
     local DistanciaViajeSoloIda = math.abs(root.Position.Z - TargetZ)
     local DistanciaTotalViaje = DistanciaViajeSoloIda * 2
     local TiempoVuelo = DistanciaTotalViaje / BetaConfig.Speed
-    local TiempoRecoger = 0.25 -- 0.25s súper rápido
+    local TiempoRecoger = 0.1 -- ⚡ Reacción casi instantánea
     local NuestroTiempoTotal = TiempoVuelo + TiempoRecoger
 
     for _, wave in pairs(folder:GetChildren()) do
@@ -140,29 +141,23 @@ local function EsSeguroMatematico(TargetX, TargetZ)
             local VelX = p.AssemblyLinearVelocity.X
             local SpeedOla = math.abs(VelX)
             
-            -- Si usa Tweens, AssemblyLinearVelocity puede ser 0. Asumimos una mega rápida de 250 studs/s
             if SpeedOla < 10 then SpeedOla = 250 end 
             
             local PosOlaX = p.Position.X
             local DistanciaOlaAlItem = math.abs(PosOlaX - TargetX)
 
-            -- ¿Está la ola tocando el item AHORA MISMO? (Grosor aprox de ola = 90)
             if DistanciaOlaAlItem < 90 then return false end
 
-            -- ¿Se acerca la ola al item?
             local seAcerca = false
             if VelX > 0 and PosOlaX < TargetX then seAcerca = true end
             if VelX < 0 and PosOlaX > TargetX then seAcerca = true end
-            if SpeedOla == 250 and DistanciaOlaAlItem < 1200 then seAcerca = true end -- Caso Tweens
+            if SpeedOla == 250 and DistanciaOlaAlItem < 1200 then seAcerca = true end 
 
             if seAcerca then
-                -- Calcular Tiempo de la Ola (Fórmula: T = D / V)
                 local TiempoOlaLlega = DistanciaOlaAlItem / SpeedOla
-                
-                -- RESTA LÓGICA:
                 local Diferencia = TiempoOlaLlega - NuestroTiempoTotal
                 
-                -- Si la diferencia es menor a 0.5 segundos (margen de error), esperamos. Da negativo o muy poco = Peligro.
+                -- Si la ola llega en el mismo tiempo que nosotros o menos, ES PELIGROSO
                 if Diferencia < 0.5 then
                     return false
                 end
@@ -241,7 +236,7 @@ AutoFarmBTab:Toggle({
 })
 
 AutoFarmBTab:Toggle({
-    Title = "⚡ Activar Hit & Run Matemático",
+    Title = "⚡ Activar Auto-Collect (Anti-Tsunami)",
     Callback = function(state)
         BetaConfig.Enabled = state
         
@@ -270,6 +265,7 @@ AutoFarmBTab:Toggle({
                             local root = GetRoot()
                             if not root or LocalPlayer.Character.Humanoid.Health <= 0 then return end
 
+                            -- SOLO VA A PUNTO B SI TIENE CARGA PESADA (LUCKY/BRAINROTS)
                             if ContarCargaActual() >= 3 then
                                 IsDoingSequence = true
                                 BetaFlyTo(PuntoB) 
@@ -296,36 +292,34 @@ AutoFarmBTab:Toggle({
                                         local PuntoEntradaRiel = CFrame.new(MiXActual, AlturaSegura, RielSeguroZ)
                                         local PuntoDeAtaque = CFrame.new(TargetX, AlturaSegura, RielSeguroZ)
 
-                                        -- 1. Si estamos lejos del riel, retroceder al riel primero
                                         if math.abs(root.Position.Z - RielSeguroZ) > 10 then
                                             BetaFlyTo(PuntoEntradaRiel)
                                         end
 
-                                        -- 2. Alinearse en X
                                         BetaFlyTo(PuntoDeAtaque)
 
-                                        -- 3. ESPERA MATEMÁTICA EXACTA
+                                        -- REACCIÓN INSTANTÁNEA: Revisa ola sin pausas lentas
                                         while BetaConfig.Enabled and not EsSeguroMatematico(TargetX, TargetZ) do
-                                            task.wait(0.05) -- Revisamos la matemática muy rápido
+                                            task.wait() 
                                         end
 
-                                        -- 4. ATAQUE RELÁMPAGO
                                         if BetaConfig.Enabled then
                                             BetaFlyTo(MovePart.CFrame)
                                             
-                                            -- 5. RECOLECCIÓN BRUTAL (0.25 Segundos)
+                                            -- RECOLECCIÓN BRUTAL (Sin Esperas Largas)
                                             if Prompt then
                                                 Prompt.RequiresLineOfSight = false
                                                 Prompt.HoldDuration = 0
-                                                for i = 1, 25 do 
+                                                -- Lo activamos 15 veces en el mismo instante
+                                                for i = 1, 15 do 
                                                     fireproximityprompt(Prompt) 
-                                                    task.wait(0.01)
                                                 end
+                                                task.wait(0.1) -- Pequeño delay para que el server lo procese
                                             end
                                             
                                             Processed[Target] = true
                                             
-                                            -- 6. ESCAPE INMEDIATO
+                                            -- REGRESO INMEDIATO AL RIEL
                                             BetaFlyTo(PuntoDeAtaque)
                                         end
                                         
@@ -333,13 +327,15 @@ AutoFarmBTab:Toggle({
                                     end)
                                 end
                             else
-                                if (root.Position - PuntoB.Position).Magnitude > 50 then
-                                    BetaFlyTo(PuntoB)
+                                -- SI NO HAY TARGETS Y NO TIENES LA ESPALDA LLENA: Quedate en el riel donde estás
+                                local PosicionDescanso = CFrame.new(root.Position.X, AlturaSegura, RielSeguroZ)
+                                if math.abs(root.Position.Z - RielSeguroZ) > 5 then
+                                    BetaFlyTo(PosicionDescanso)
                                 end
                             end
                         end
                     end)
-                    task.wait(0.05)
+                    task.wait() -- Ciclo ultra rápido
                 end
             end)
             
@@ -352,12 +348,13 @@ AutoFarmBTab:Toggle({
             end)
             
         else
+            -- ❌ DESTRUCCIÓN DE TODOS LOS MOTORES Y APAGADO SEGURO
             if BetaTween then BetaTween:Cancel() end
             IsBetaFlying = false
             IsDoingSequence = false
             RunService:UnbindFromRenderStep("BetaFlyStabilizer")
             
-            RemoveAntiGravity() -- Quita el vuelo correctamente al apagar
+            RemoveAntiGravity() -- Quita cualquier BodyVelocity residual
             
             if LocalPlayer.Character then
                 local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -374,7 +371,7 @@ AutoFarmBTab:Toggle({
 })
 
 -- --- [ SELECCIÓN DE ITEMS ] ---
-AutoFarmBTab:Section({ Title = "--[ EVENTOS LIGEROS ]--" })
+AutoFarmBTab:Section({ Title = "--[ EVENTOS LIGEROS (Al toque) ]--" })
 AutoFarmBTab:Toggle({ Title = "Tickets 🎫", Callback = function(s) BetaConfig.ActiveFolders["ArcadeEventTickets"] = s end })
 AutoFarmBTab:Toggle({ Title = "Consoles 🎮", Callback = function(s) BetaConfig.ActiveFolders["ArcadeEventConsoles"] = s end })
 AutoFarmBTab:Toggle({ Title = "Gold Money 🪙", Callback = function(s) BetaConfig.ActiveFolders["MoneyEventParts"] = s end })
