@@ -29,10 +29,14 @@ local function ObtenerCosasQueEstorban()
         workspace:FindFirstChild("DefaultMap") and workspace.DefaultMap:FindFirstChild("Walls"),
         workspace:FindFirstChild("MarsMap") and workspace.MarsMap:FindFirstChild("Walls"),
         workspace:FindFirstChild("MarsMap") and workspace.MarsMap:FindFirstChild("RightWalls"),
-        
-        -- 🔥 UPDATE SAN VALENTÍN 🔥
         workspace:FindFirstChild("ValentinesMap") and workspace.ValentinesMap:FindFirstChild("RightWalls"),
-        workspace:FindFirstChild("ValentinesMap") and workspace.ValentinesMap:FindFirstChild("Walls")
+        workspace:FindFirstChild("ValentinesMap") and workspace.ValentinesMap:FindFirstChild("Walls"),
+        workspace:FindFirstChild("ArcadeMap") and workspace.ArcadeMap:FindFirstChild("Decoration"),
+        workspace:FindFirstChild("ArcadeMap") and workspace.ArcadeMap:FindFirstChild("Walls"),
+        workspace:FindFirstChild("DoomMap") and workspace.DoomMap:FindFirstChild("Walls"),
+        workspace:FindFirstChild("DoomMap_SharedInstances") and workspace.DoomMap_SharedInstances:FindFirstChild("VIPWalls"),
+        workspace:FindFirstChild("GameObjects") and workspace.GameObjects:FindFirstChild("PlaceSpecific") and workspace.GameObjects.PlaceSpecific:FindFirstChild("root") and workspace.GameObjects.PlaceSpecific.root:FindFirstChild("Misc") and workspace.GameObjects.PlaceSpecific.root.Misc:FindFirstChild("BrickAddition"),
+        workspace:FindFirstChild("DoomMap") and workspace.DoomMap:FindFirstChild("RightWalls")
     }
 end
 
