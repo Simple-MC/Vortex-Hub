@@ -1,6 +1,6 @@
 --[[
     MODULE: VORTEX GOD MODE & WALL BYPASS (Combat.lua)
-    FEATURES: Dynamic Folder Cleaning, VIP/Wall Bypass, Custom Borders
+    FEATURES: Dynamic Folder Cleaning, VIP/Wall Bypass to Lighting, Custom Borders
 ]]
 
 local AlmacenTemporal = game:GetService("Lighting")
@@ -15,7 +15,6 @@ local BordesEstructura = {}
 -- ==========================================
 -- 🛠️ LISTA DINÁMICA DE COSAS QUE ESTORBAN
 -- ==========================================
--- Al ponerlo como función, escanea el mapa en tiempo real por si el mapa cambia de la nada.
 local function ObtenerCosasQueEstorban()
     return {
         workspace:FindFirstChild("ArcadeMap") and workspace.ArcadeMap:FindFirstChild("RightWalls"),
@@ -27,10 +26,8 @@ local function ObtenerCosasQueEstorban()
         workspace:FindFirstChild("DefaultMap") and workspace.DefaultMap:FindFirstChild("RightWalls"),
         workspace:FindFirstChild("Misc") and workspace.Misc:FindFirstChild("BrickAddition"),
         workspace:FindFirstChild("DefaultMap") and workspace.DefaultMap:FindFirstChild("Walls"),
-
-workspace:FindFirstChild("MarsMap") and workspace.MarsMap:FindFirstChild("Walls"),
-
-workspace:FindFirstChild("MarsMap") and workspace.MarsMap:FindFirstChild("RightWalls"),
+        workspace:FindFirstChild("MarsMap") and workspace.MarsMap:FindFirstChild("Walls"),
+        workspace:FindFirstChild("MarsMap") and workspace.MarsMap:FindFirstChild("RightWalls"),
         
         -- 🔥 UPDATE SAN VALENTÍN 🔥
         workspace:FindFirstChild("ValentinesMap") and workspace.ValentinesMap:FindFirstChild("RightWalls"),
@@ -39,21 +36,22 @@ workspace:FindFirstChild("MarsMap") and workspace.MarsMap:FindFirstChild("RightW
 end
 
 -- ==========================================
-
--- Funcion de movimiento seguro
+-- 🛠️ FUNCIONES DE MOVIMIENTO SEGURO
+-- ==========================================
 local function SafeMove(obj, newParent)
     if obj and not OriginalParents[obj] then
+        -- Guarda el padre original la PRIMERA vez que lo mueve
         OriginalParents[obj] = obj.Parent
     end
     if obj then obj.Parent = newParent end
 end
 
--- Funcion para restaurar todo al apagar
 local function RestoreAll()
+    -- Regresa todo lo que está en el almacén a su lugar original
     for obj, parent in pairs(OriginalParents) do
         pcall(function() if obj then obj.Parent = parent end end)
     end
-    OriginalParents = {}
+    OriginalParents = {} -- Limpiamos memoria
     
     for obj, data in pairs(OriginalMudData) do
         pcall(function()
@@ -66,7 +64,6 @@ local function RestoreAll()
     OriginalMudData = {}
 
     pcall(function()
-        -- Agregamos ValentinesMap_SharedInstances a la lista de restauración
         local folders = {
             "DefaultMap_SharedInstances", "MoneyMap_SharedInstances", 
             "MarsMap_SharedInstances", "RadioactiveMap_SharedInstances", 
@@ -86,7 +83,9 @@ local function RestoreAll()
     end)
 end
 
--- Configuracion de Bordes (Con la expansion del mapa v31)
+-- ==========================================
+-- 🛠️ CONFIGURACIÓN DE BORDES
+-- ==========================================
 local configBordes = {
     {nombre = "B1", size = Vector3.new(90, 2.7, 2048), cf = CFrame.new(1177, 0, -143, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
     {nombre = "B2", size = Vector3.new(90, 2.7, 2048), cf = CFrame.new(1917, 0, -143, -4.37113883e-08, 0, 1, 1, -4.37113883e-08, 4.37113883e-08, 4.37113883e-08, 1, 1.91068547e-15)},
@@ -103,21 +102,23 @@ local configBordes = {
     {nombre = "Borde13", size = Vector3.new(6, 90, 284), cf = CFrame.new(4353, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1)}
 }
 
--- Creamos la sección visual en WindUI (Asegúrate de que _G.AutoFarmTab exista en tu Main.lua)
+-- ==========================================
+-- 🛠️ INTERFAZ DE USUARIO (TOGGLE)
+-- ==========================================
 _G.AutoFarmTab:Section({ Title = "--[ GOD MODE & PROTECCIÓN ]--", Icon = "shield" })
 
--- Toggle principal
 _G.AutoFarmTab:Toggle({
     Title = "🔥 Activate God Mode Total (+VIP)",
     Callback = function(state)
         GodModeEnabled = state
         
         if GodModeEnabled then
+            -- === BUCLE PRINCIPAL (Escanea cambios de mapa constantemente) ===
             task.spawn(function()
                 while GodModeEnabled do
                     pcall(function()
                         
-                        -- === LIMPIEZA DINÁMICA DE MAPAS ===
+                        -- 1. LIMPIA BASURA (Actualiza si cargan mapas nuevos)
                         local listaBasura = ObtenerCosasQueEstorban()
                         for _, objetoEnMedio in pairs(listaBasura) do
                             if objetoEnMedio then
@@ -125,8 +126,7 @@ _G.AutoFarmTab:Toggle({
                             end
                         end
 
-                        -- === FREE VIP & WALL BYPASS ===
-                        -- Agregamos ValentinesMap_SharedInstances a la lista
+                        -- 2. FREE VIP & WALLS (Actualiza si cargan mapas nuevos)
                         local vipFolders = {
                             "DefaultMap_SharedInstances", 
                             "MoneyMap_SharedInstances", 
@@ -139,6 +139,13 @@ _G.AutoFarmTab:Toggle({
                         for _, folderName in pairs(vipFolders) do
                             local folder = workspace:FindFirstChild(folderName)
                             if folder then
+                                -- Mover la carpeta VIPWalls entera al almacén si aparece
+                                local vipWalls = folder:FindFirstChild("VIPWalls")
+                                if vipWalls then
+                                    SafeMove(vipWalls, AlmacenTemporal)
+                                end
+                                
+                                -- Revisar piezas sueltas que puedan estorbar
                                 for _, obj in pairs(folder:GetDescendants()) do
                                     if obj:IsA("BasePart") and (obj.Name:find("VIP") or obj.Name:find("Wall") or obj.Name:find("Mud")) then
                                         obj.CanCollide = false
@@ -147,12 +154,13 @@ _G.AutoFarmTab:Toggle({
                                 end
                             end
                         end
+                        
                     end)
-                    task.wait(0.5) -- Revisa cada medio segundo
+                    task.wait(0.5) -- Pausa de medio segundo para no saturar el juego
                 end
             end)
 
-            -- Crear bordes rojos de protección
+            -- Crear bordes rojos de protección (Esto no necesita bucle)
             for _, d in ipairs(configBordes) do
                 local p = Instance.new("Part", workspace)
                 p.Name = d.nombre; p.Size = d.size; p.CFrame = d.cf; p.Anchored = true; p.CanCollide = true
@@ -161,9 +169,11 @@ _G.AutoFarmTab:Toggle({
             end
             
         else
-            -- Restaurar todo a la normalidad
-            RestoreAll()
-            for _, b in pairs(BordesEstructura) do if b then b:Destroy() end end
+            -- === APAGAR GOD MODE ===
+            RestoreAll() -- Devuelve todo a la normalidad
+            for _, b in pairs(BordesEstructura) do 
+                if b then b:Destroy() end 
+            end
             BordesEstructura = {}
         end
     end
