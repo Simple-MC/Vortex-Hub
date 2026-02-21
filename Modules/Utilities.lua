@@ -23,7 +23,7 @@ Section:Toggle({
             workspace:FindFirstChild("MoneyMap_SharedInstances"),
             workspace:FindFirstChild("MarsMap_SharedInstances"),
             workspace:FindFirstChild("RadioactiveMap_SharedInstances"),
-            workspace:FindFirstChild("ArcadeMap_SharedInstances")
+            workspace:FindFirstChild("ArcadeMap_SharedInstances"),
             workspace:FindFirstChild("ValentinesMap_SharedInstances")    
         }
 
