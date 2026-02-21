@@ -1,5 +1,5 @@
 -- =================================================================
--- 🚀 MODULE: AUTO-COLLECT (BETA) - ULTRA FAST + PERFECT MATH
+-- 🚀 MODULE: AUTO-COLLECT (BETA) - MACH 5 SPEED + CUSTOM RETURNS
 -- =================================================================
 
 local AutoFarmBTab = _G.AutoFarmBTab
@@ -11,7 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- --- [ CONFIGURACIÓN DE PUNTOS ] ---
 local PuntoA = CFrame.new(4345, 3, -140)
-local PuntoB = CFrame.new(145, 3, -140) -- SOLO PARA DESCARGAR 3 ITEMS
+local PuntoB = CFrame.new(145, 3, -140) -- BASE DE DESCARGA
 
 local RielSeguroZ = -140
 local RielMinX = 145
@@ -21,7 +21,9 @@ local AlturaSegura = 3
 local BetaConfig = {
     Enabled = false,
     RespawnOnStart = false,
-    Speed = 1800, -- 🚀 MÁXIMA VELOCIDAD POSIBLE
+    VolverSiNoHay = false,   -- Botón 1 nuevo
+    VolverAlAgarrar1 = false, -- Botón 2 nuevo
+    Speed = 1800, -- 🚀 MODO JET DE COMBATE ACTIVADO
     ActiveFolders = {}, 
     Targets = { LuckyBlocks = false, Brainrots = false },
     Sel = { Lucky = {}, Brain = {} }
@@ -63,8 +65,9 @@ local function ContarCargaActual()
     return count
 end
 
--- --- [ MOTOR ANTI-GRAVEDAD A PRUEBA DE FALLOS ] ---
+-- --- [ MOTOR ANTI-GRAVEDAD BLINDADO ] ---
 local function EnsureAntiGravity()
+    if not BetaConfig.Enabled then return end -- CANDADO: No crear si está apagado
     local root = GetRoot()
     if root then
         if not root:FindFirstChild("BetaAntiGravity") then
@@ -78,14 +81,17 @@ local function EnsureAntiGravity()
 end
 
 local function RemoveAntiGravity()
-    local char = LocalPlayer.Character
-    if char then
-        -- Búsqueda forzada en todo el personaje para que no se quede pegado
-        for _, v in pairs(char:GetDescendants()) do
-            if v:IsA("BodyVelocity") and v.Name == "BetaAntiGravity" then
+    local root = GetRoot()
+    if root then
+        -- Barrido total y forzado
+        for _, v in pairs(root:GetChildren()) do
+            if v:IsA("BodyVelocity") or v.Name == "BetaAntiGravity" then
                 v:Destroy()
             end
         end
+        -- Frenamos el cuerpo en seco
+        root.Velocity = Vector3.zero
+        root.RotVelocity = Vector3.zero
     end
 end
 
@@ -113,7 +119,7 @@ local function BetaFlyTo(TargetCFrame)
             IsBetaFlying = false
             return
         end
-        task.wait() -- Usamos el tiempo mínimo absoluto de Roblox
+        task.wait() 
         elapsed = elapsed + 0.015
     end
     
@@ -128,11 +134,10 @@ local function EsSeguroMatematico(TargetX, TargetZ)
     local root = GetRoot()
     if not root then return false end
 
-    -- 1. Nuestro Tiempo (Vuelo rapidísimo + 0.1s de recoger)
     local DistanciaViajeSoloIda = math.abs(root.Position.Z - TargetZ)
     local DistanciaTotalViaje = DistanciaViajeSoloIda * 2
     local TiempoVuelo = DistanciaTotalViaje / BetaConfig.Speed
-    local TiempoRecoger = 0.1 -- ⚡ Reacción casi instantánea
+    local TiempoRecoger = 0.1 
     local NuestroTiempoTotal = TiempoVuelo + TiempoRecoger
 
     for _, wave in pairs(folder:GetChildren()) do
@@ -151,13 +156,12 @@ local function EsSeguroMatematico(TargetX, TargetZ)
             local seAcerca = false
             if VelX > 0 and PosOlaX < TargetX then seAcerca = true end
             if VelX < 0 and PosOlaX > TargetX then seAcerca = true end
-            if SpeedOla == 250 and DistanciaOlaAlItem < 1200 then seAcerca = true end 
+            if SpeedOla >= 250 and DistanciaOlaAlItem < 1200 then seAcerca = true end 
 
             if seAcerca then
                 local TiempoOlaLlega = DistanciaOlaAlItem / SpeedOla
                 local Diferencia = TiempoOlaLlega - NuestroTiempoTotal
                 
-                -- Si la ola llega en el mismo tiempo que nosotros o menos, ES PELIGROSO
                 if Diferencia < 0.5 then
                     return false
                 end
@@ -230,9 +234,17 @@ AutoFarmBTab:Section({ Title = "--[ L-SHAPE HIT & RUN ]--", Icon = "skull" })
 
 AutoFarmBTab:Toggle({
     Title = "💀 Renacer al Encender (Llegar rápido)",
-    Callback = function(state)
-        BetaConfig.RespawnOnStart = state
-    end
+    Callback = function(state) BetaConfig.RespawnOnStart = state end
+})
+
+AutoFarmBTab:Toggle({
+    Title = "🏠 Volver a Base si NO hay items en el mapa",
+    Callback = function(state) BetaConfig.VolverSiNoHay = state end
+})
+
+AutoFarmBTab:Toggle({
+    Title = "📦 Auto-volver al agarrar 1 solo ítem",
+    Callback = function(state) BetaConfig.VolverAlAgarrar1 = state end
 })
 
 AutoFarmBTab:Toggle({
@@ -265,8 +277,10 @@ AutoFarmBTab:Toggle({
                             local root = GetRoot()
                             if not root or LocalPlayer.Character.Humanoid.Health <= 0 then return end
 
-                            -- SOLO VA A PUNTO B SI TIENE CARGA PESADA (LUCKY/BRAINROTS)
-                            if ContarCargaActual() >= 3 then
+                            -- 🎒 LÓGICA DE INVENTARIO INTELIGENTE
+                            local LimiteMochila = BetaConfig.VolverAlAgarrar1 and 1 or 3
+                            
+                            if ContarCargaActual() >= LimiteMochila then
                                 IsDoingSequence = true
                                 BetaFlyTo(PuntoB) 
                                 task.wait(1.5) 
@@ -298,7 +312,6 @@ AutoFarmBTab:Toggle({
 
                                         BetaFlyTo(PuntoDeAtaque)
 
-                                        -- REACCIÓN INSTANTÁNEA: Revisa ola sin pausas lentas
                                         while BetaConfig.Enabled and not EsSeguroMatematico(TargetX, TargetZ) do
                                             task.wait() 
                                         end
@@ -306,20 +319,17 @@ AutoFarmBTab:Toggle({
                                         if BetaConfig.Enabled then
                                             BetaFlyTo(MovePart.CFrame)
                                             
-                                            -- RECOLECCIÓN BRUTAL (Sin Esperas Largas)
                                             if Prompt then
                                                 Prompt.RequiresLineOfSight = false
                                                 Prompt.HoldDuration = 0
-                                                -- Lo activamos 15 veces en el mismo instante
                                                 for i = 1, 15 do 
                                                     fireproximityprompt(Prompt) 
                                                 end
-                                                task.wait(0.1) -- Pequeño delay para que el server lo procese
+                                                task.wait(0.1) 
                                             end
                                             
                                             Processed[Target] = true
                                             
-                                            -- REGRESO INMEDIATO AL RIEL
                                             BetaFlyTo(PuntoDeAtaque)
                                         end
                                         
@@ -327,15 +337,21 @@ AutoFarmBTab:Toggle({
                                     end)
                                 end
                             else
-                                -- SI NO HAY TARGETS Y NO TIENES LA ESPALDA LLENA: Quedate en el riel donde estás
-                                local PosicionDescanso = CFrame.new(root.Position.X, AlturaSegura, RielSeguroZ)
-                                if math.abs(root.Position.Z - RielSeguroZ) > 5 then
-                                    BetaFlyTo(PosicionDescanso)
+                                -- 🏠 LÓGICA DE DESCANSO: ¿Volver a base o quedarse en el riel?
+                                if BetaConfig.VolverSiNoHay then
+                                    if (root.Position - PuntoB.Position).Magnitude > 50 then
+                                        BetaFlyTo(PuntoB)
+                                    end
+                                else
+                                    local PosicionDescanso = CFrame.new(root.Position.X, AlturaSegura, RielSeguroZ)
+                                    if math.abs(root.Position.Z - RielSeguroZ) > 5 then
+                                        BetaFlyTo(PosicionDescanso)
+                                    end
                                 end
                             end
                         end
                     end)
-                    task.wait() -- Ciclo ultra rápido
+                    task.wait() 
                 end
             end)
             
@@ -348,13 +364,13 @@ AutoFarmBTab:Toggle({
             end)
             
         else
-            -- ❌ DESTRUCCIÓN DE TODOS LOS MOTORES Y APAGADO SEGURO
+            -- ❌ DESTRUCCIÓN FORZADA DEL VUELO
             if BetaTween then BetaTween:Cancel() end
             IsBetaFlying = false
             IsDoingSequence = false
             RunService:UnbindFromRenderStep("BetaFlyStabilizer")
             
-            RemoveAntiGravity() -- Quita cualquier BodyVelocity residual
+            RemoveAntiGravity() -- ELIMINA EL BODYVELOCITY Y RESETEA FÍSICAS AL 100%
             
             if LocalPlayer.Character then
                 local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -371,7 +387,7 @@ AutoFarmBTab:Toggle({
 })
 
 -- --- [ SELECCIÓN DE ITEMS ] ---
-AutoFarmBTab:Section({ Title = "--[ EVENTOS LIGEROS (Al toque) ]--" })
+AutoFarmBTab:Section({ Title = "--[ EVENTOS LIGEROS ]--" })
 AutoFarmBTab:Toggle({ Title = "Tickets 🎫", Callback = function(s) BetaConfig.ActiveFolders["ArcadeEventTickets"] = s end })
 AutoFarmBTab:Toggle({ Title = "Consoles 🎮", Callback = function(s) BetaConfig.ActiveFolders["ArcadeEventConsoles"] = s end })
 AutoFarmBTab:Toggle({ Title = "Gold Money 🪙", Callback = function(s) BetaConfig.ActiveFolders["MoneyEventParts"] = s end })
@@ -379,7 +395,7 @@ AutoFarmBTab:Toggle({ Title = "UFO Money 👽", Callback = function(s) BetaConfi
 AutoFarmBTab:Toggle({ Title = "CANDYS 🍭", Callback = function(s) BetaConfig.ActiveFolders["CandyEventParts"] = s end })
 AutoFarmBTab:Toggle({ Title = "COINS 🍬", Callback = function(s) BetaConfig.ActiveFolders["ValentinesCoinParts"] = s end })
 
-AutoFarmBTab:Section({ Title = "--[ OBJETOS PESADOS (Límite 3) ]--" })
+AutoFarmBTab:Section({ Title = "--[ OBJETOS PESADOS (Brainrots/Lucky) ]--" })
 AutoFarmBTab:Toggle({ Title = "Lucky Blocks", Callback = function(s) BetaConfig.Targets.LuckyBlocks = s end })
 AutoFarmBTab:Dropdown({ Title = "Lucky Filter", Multi = true, Values = GetNames("LuckyBlocks"), Callback = function(v) BetaConfig.Sel.Lucky = v end })
 AutoFarmBTab:Toggle({ Title = "Brainrots", Callback = function(s) BetaConfig.Targets.Brainrots = s end })
