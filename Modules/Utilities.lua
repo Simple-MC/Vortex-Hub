@@ -24,6 +24,7 @@ Section:Toggle({
             workspace:FindFirstChild("MarsMap_SharedInstances"),
             workspace:FindFirstChild("RadioactiveMap_SharedInstances"),
             workspace:FindFirstChild("ArcadeMap_SharedInstances")
+            workspace:FindFirstChild("ValentinesMap_SharedInstances")    
         }
 
         if state then
