@@ -23,7 +23,7 @@ local BetaConfig = {
     RespawnOnStart = false,
     VolverSiNoHay = false,   -- Botón 1 nuevo
     VolverAlAgarrar1 = false, -- Botón 2 nuevo
-    Speed = 1800, -- 🚀 MODO JET DE COMBATE ACTIVADO
+    Speed = 1650, -- 🚀 MODO JET DE COMBATE ACTIVADO
     ActiveFolders = {}, 
     Targets = { LuckyBlocks = false, Brainrots = false },
     Sel = { Lucky = {}, Brain = {} }
