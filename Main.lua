@@ -24,6 +24,7 @@ _G.EspTab = Window:Tab({ Title = "Visuals", Icon = "eye" })    -- ESP Brainrots/
 _G.UtilitiesTab = Window:Tab({ Title = "Utilities", Icon = "code-xml" }) -- VIP, Prompts
 _G.AutoFarmTab = Window:Tab({ Title = "Auto Farm", Icon = "zap" }) -- AUTO FARM 
 _G.SettingsTab = Window:Tab({ Title = "Settings", Icon = "settings" }) -- AUTO FARM 
+_G.AutoFarmBTab = Window:Tab({ Title = "Auto Farm (BETA)", Icon = "zap" }) -- AUTO FARM (BETA)
 
 
 -- CARGA DE MÓDULOS
