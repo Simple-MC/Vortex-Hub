@@ -1,5 +1,5 @@
 -- =================================================================
--- 🏰 TOWER.LUA - AUTO FARM PERFECTO (ANTI-NINJA & SMART COOLDOWN)
+-- 🏰 TOWER.LUA - AUTO FARM PERFECTO (V6 - ONE CLICK & NO DETOURS)
 -- =================================================================
 
 local AutoFarmBTab = _G.AutoFarmBTab 
@@ -101,7 +101,7 @@ local function EsSeguroMatematico(TargetX, TargetZ)
     if not root then return false end
     local currentSpeed = getVelocidadBypass()
     local DistanciaTotalViaje = math.abs(root.Position.Z - TargetZ) * 2
-    local NuestroTiempoTotal = (DistanciaTotalViaje / currentSpeed) + 1 -- Añadimos 1s de margen
+    local NuestroTiempoTotal = (DistanciaTotalViaje / currentSpeed) + 1 
     for _, wave in pairs(folder:GetChildren()) do
         local p = wave:IsA("BasePart") and wave or wave:FindFirstChildWhichIsA("BasePart", true)
         if p then
@@ -128,21 +128,27 @@ local function LShapeFlyTo(TargetCFrame)
     if TowerConfig.AutoFarm then FlyDirect(TargetCFrame) end
 end
 
--- --- [ NUEVO: FRENOS ABSOLUTOS DE 1 SEGUNDO ] ---
-local function FirePromptSafely(prompt, duration)
+-- --- [ NUEVO: 1 SOLO CLICK Y FRENO ESTÁTICO ] ---
+local function InteractOnceSafely(prompt, waitTime)
     if not prompt then return end
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     
     prompt.RequiresLineOfSight = false
     prompt.HoldDuration = 0
     
+    -- Frenamos en seco
+    if root then 
+        root.Velocity = Vector3.zero 
+        root.RotVelocity = Vector3.zero 
+    end
+    
+    -- 🎯 ¡UN SOLO CLICK! Así evitamos que reclame la recompensa por error
+    fireproximityprompt(prompt)
+    
+    -- Nos quedamos quietos el tiempo solicitado
     local start = tick()
-    while tick() - start < duration do
-        if root then 
-            root.Velocity = Vector3.zero -- CONGELADO 100%
-            root.RotVelocity = Vector3.zero 
-        end
-        fireproximityprompt(prompt)
+    while tick() - start < waitTime do
+        if root then root.Velocity = Vector3.zero end
         task.wait(0.05)
     end
 end
@@ -223,7 +229,7 @@ local function ClickVirtualYes()
     return false
 end
 
--- --- [ NUEVO: AUTO REWARD INSTANTÁNEO (ANTI NINJAS) ] ---
+-- --- [ EL ROBADOR DE RECOMPENSAS (INTOCABLE) ] ---
 local function GrabClosestReward()
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not root then return false end
@@ -234,14 +240,13 @@ local function GrabClosestReward()
             if obj:IsA("Model") then
                 local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
                 local part = prompt and prompt.Parent or obj:FindFirstChild("Root")
-                -- Escanea en un radio de 50 studs (Ya estamos en la torre)
+                -- TP Instantáneo si está cerca
                 if part and (root.Position - part.Position).Magnitude < 50 then
-                    -- TELETRANSPORTE INSTANTÁNEO AL ITEM
                     root.CFrame = part.CFrame
                     prompt.RequiresLineOfSight = false
                     prompt.HoldDuration = 0
                     for i = 1, 20 do fireproximityprompt(prompt) task.wait(0.01) end
-                    warn("💎 ¡RECOMPENSA ROBADA CON ÉXITO A LOS NINJAS!")
+                    warn("💎 ¡RECOMPENSA RECOLECTADA!")
                     return true
                 end
             end
@@ -251,7 +256,7 @@ local function GrabClosestReward()
 end
 
 -- =================================================================
--- 🎨 INTERFAZ GRÁFICA Y BUCLE
+-- 🎨 INTERFAZ GRÁFICA Y BUCLE PRINCIPAL
 -- =================================================================
 
 AutoFarmBTab:Section({ Title = "--Tower Event--", Icon = "castle" })
@@ -264,10 +269,8 @@ AutoFarmBTab:Toggle({
         if state then
             if _G.ToggleAutoCollectPro then _G.ToggleAutoCollectPro(false) end
             
-            -- ACTIVAR GOD MODE AUTOMÁTICO
             if _G.GodModeEnabled == false and _G.ActivarGodModeTotal then
                 _G.ActivarGodModeTotal(true)
-                warn("🛡️ God Mode Activado para la Torre")
             end
             
             IsDoingTower = false
@@ -283,40 +286,36 @@ AutoFarmBTab:Toggle({
                             local prompt = GetTowerPrompt()
 
                             if towerPos and prompt then
-                                -- 1. CHECK DE COOLDOWN INTELIGENTE
+                                -- 1. CHECK DE COOLDOWN DE 5 MINUTOS (Va a base)
                                 if not prompt.Enabled then
                                     if (root.Position - PuntoB.Position).Magnitude > 50 then
                                         LShapeFlyTo(PuntoB)
                                         RemoveAntiGravity()
                                     end
-                                    return -- Se detiene y espera en base hasta que Enabled sea true
+                                    return 
                                 end
 
                                 if not IsTrialActive() then
-                                    -- INICIAR MISIÓN (Se queda 1 segundo quieto)
+                                    -- INICIAR MISIÓN
                                     if prompt.ActionText == "Start Trial!" then
                                         IsDoingTower = true
                                         LShapeFlyTo(towerPos)
-                                        FirePromptSafely(prompt, 1) 
-                                        LShapeFlyTo(PuntoB)
-                                        RemoveAntiGravity()
+                                        InteractOnceSafely(prompt, 1) -- 1 solo click, espera 1s
                                         IsDoingTower = false
                                     end
                                 else
                                     local current = GetCurrentDeposits()
                                     
-                                    -- COMPLETAR MISIÓN (Solo si alcanzamos la meta elegida en Dropdown)
+                                    -- COMPLETAR MISIÓN (Llegó a la meta)
                                     if current >= TowerConfig.TargetDeposits or prompt.ActionText == "Complete Trial" then
                                         IsDoingTower = true
                                         LShapeFlyTo(towerPos)
-                                        FirePromptSafely(prompt, 1) 
+                                        InteractOnceSafely(prompt, 0.5) -- Click para abrir UI
                                         
                                         task.wait(0.6) 
                                         if ClickVirtualYes() then
                                             if TowerConfig.AutoReward then
-                                                warn("⏳ Escaneando aparición de recompensa... (Modo Anti-Ninja)")
                                                 local agarrado = false
-                                                -- Espera hasta 3 segundos, escaneando cada milisegundo
                                                 for i = 1, 30 do
                                                     if GrabClosestReward() then 
                                                         agarrado = true 
@@ -324,25 +323,24 @@ AutoFarmBTab:Toggle({
                                                     end
                                                     task.wait(0.1)
                                                 end
-                                                if not agarrado then warn("❌ Ninguna recompensa spawneó.") end
                                             end
                                         end
                                         
+                                        -- Misión cumplida -> Retirada táctica a la base
                                         LShapeFlyTo(PuntoB)
                                         RemoveAntiGravity()
                                         IsDoingTower = false
                                         
                                     else
-                                        -- ENTREGAR BRAINROT (Frenos puestos)
+                                        -- ENTREGAR BRAINROT (En proceso)
                                         if HasBrainrotInBack() then
                                             IsDoingTower = true
                                             LShapeFlyTo(towerPos)
-                                            FirePromptSafely(prompt, 1)
-                                            warn("📦 Entregado! Volviendo a base a esperar la interfaz...")
+                                            InteractOnceSafely(prompt, 0.2) -- 1 Solo click de entrega
                                             
-                                            LShapeFlyTo(PuntoB)
-                                            RemoveAntiGravity()
-                                            task.wait(1) -- Pequeña pausa para que actualice la UI
+                                            -- SE QUEDA EN LA TORRE 3.5 SEGUNDOS
+                                            warn("📦 Entregado! Esperando 3.5s nueva rareza...")
+                                            task.wait(3.5)
                                             IsDoingTower = false
                                         else
                                             -- BUSCAR BRAINROT
@@ -356,7 +354,7 @@ AutoFarmBTab:Toggle({
                                                     
                                                     if p and base then
                                                         LShapeFlyTo(base.CFrame)
-                                                        FirePromptSafely(p, 1) -- Quieto agarrándolo
+                                                        InteractOnceSafely(p, 1) -- 1 Solo click para recoger
                                                     end
                                                     IsDoingTower = false
                                                 end
