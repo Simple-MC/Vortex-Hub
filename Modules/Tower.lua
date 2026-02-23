@@ -2,7 +2,7 @@
 -- 🏰 TOWER.LUA - TOWER TRIAL EVENT (L-SHAPE & VIRTUAL CLICK)
 -- =================================================================
 
-local AutoFarmBTab = _G.AutoFarmBTab -- Usamos la misma pestaña de siempre
+local AutoFarmBTab = _G.AutoFarmBTab 
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -15,7 +15,7 @@ local PuntoB = CFrame.new(145, 3, -140)
 local RielSeguroZ = -140
 local RielMinX = 145
 local RielMaxX = 4345
-local AlturaSegura = 3 -- Usamos 3 para el riel, y subimos a 6 al acercarnos a la torre
+local AlturaSegura = 3 
 
 local MULTIPLICADOR_MAX = 1 
 
@@ -65,7 +65,7 @@ local function RemoveAntiGravity()
     if char then
         for _, v in pairs(char:GetDescendants()) do
             if v:IsA("BodyVelocity") and v.Name == "TowerFlyMotor" then v:Destroy() end
-            if v:IsA("BasePart") then v.CanCollide = true end -- Restore Noclip
+            if v:IsA("BasePart") then v.CanCollide = true end 
         end
     end
     if hum then
@@ -159,12 +159,10 @@ local function LShapeFlyTo(TargetCFrame)
     local PuntoEntradaRiel = CFrame.new(root.Position.X, AlturaSegura, RielSeguroZ)
     local PuntoDeAtaque = CFrame.new(TargetX, AlturaSegura, RielSeguroZ)
 
-    -- 1. Ir al riel seguro si no estamos en él
-    if math.abs(root.Position.Z - RielSeguroZ) > 10 then
-        FlyDirect(PuntoEntradaRiel)
-    end
+    -- 1. Ir al riel seguro
+    if math.abs(root.Position.Z - RielSeguroZ) > 10 then FlyDirect(PuntoEntradaRiel) end
 
-    -- 2. Movernos por el riel hasta estar alineados
+    -- 2. Movernos por el riel
     FlyDirect(PuntoDeAtaque)
 
     -- 3. Esperar a que pase la ola
@@ -172,10 +170,8 @@ local function LShapeFlyTo(TargetCFrame)
         task.wait() 
     end
 
-    -- 4. Bajar en línea recta al objetivo
-    if TowerConfig.AutoFarm then
-        FlyDirect(TargetCFrame)
-    end
+    -- 4. Bajar al objetivo
+    if TowerConfig.AutoFarm then FlyDirect(TargetCFrame) end
 end
 
 -- --- [ FUNCIONES DE LA TORRE ] ---
@@ -188,7 +184,6 @@ local function GetTowerCalculatedCFrame()
         
     if mainPart then
         local pos = mainPart.Position
-        -- Restamos como pediste, Y = 6
         return CFrame.new(pos.X - 21.3, 6, pos.Z - 46.1)
     end
     return nil
@@ -289,11 +284,11 @@ local function GrabClosestReward()
         local prompt = c:FindFirstChildWhichIsA("ProximityPrompt", true)
         local part = prompt and prompt.Parent or c:FindFirstChild("Root")
         if part and prompt then
-            LShapeFlyTo(part.CFrame) -- ROBO CON L-SHAPE
+            LShapeFlyTo(part.CFrame) 
             prompt.RequiresLineOfSight = false
             prompt.HoldDuration = 0
             for i = 1, 20 do fireproximityprompt(prompt) task.wait(0.01) end
-            LShapeFlyTo(PuntoB) -- HUIDA A LA BASE
+            LShapeFlyTo(PuntoB) 
         end
     end
 end
@@ -310,7 +305,7 @@ AutoFarmBTab:Toggle({
         TowerConfig.AutoFarm = state
         
         if state then
-            -- 🛡️ APAGAR EL AUTO-COLLECT NORMAL PARA EVITAR CONFLICTOS
+            -- 🛡️ ¡EL INTERRUPTOR CORRECTO!
             if _G.ToggleAutoCollectPro then
                 _G.ToggleAutoCollectPro(false)
                 warn("Auto-Collect Pro pausado por Tower Event")
@@ -330,7 +325,6 @@ AutoFarmBTab:Toggle({
 
                             if towerPos and prompt then
                                 if not IsTrialActive() then
-                                    -- FASE 1: INICIAR
                                     if prompt.ActionText == "Start Trial!" then
                                         IsDoingTower = true
                                         LShapeFlyTo(towerPos)
@@ -341,11 +335,9 @@ AutoFarmBTab:Toggle({
                                         IsDoingTower = false
                                     end
                                 else
-                                    -- FASE 2 Y 3
                                     local current = GetCurrentDeposits()
                                     
                                     if current >= TowerConfig.TargetDeposits or prompt.ActionText == "Complete Trial" then
-                                        -- FASE 3: COMPLETAR
                                         IsDoingTower = true
                                         LShapeFlyTo(towerPos)
                                         prompt.RequiresLineOfSight = false
@@ -362,7 +354,6 @@ AutoFarmBTab:Toggle({
                                         IsDoingTower = false
                                         
                                     else
-                                        -- FASE 2: ENTREGAR
                                         if HasBrainrotInBack() then
                                             IsDoingTower = true
                                             LShapeFlyTo(towerPos)
