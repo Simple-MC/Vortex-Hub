@@ -1,5 +1,5 @@
 -- =================================================================
--- 🏰 TOWER.LUA - TOWER TRIAL EVENT (L-SHAPE & VIRTUAL CLICK)
+-- 🏰 TOWER.LUA - AUTO FARM PERFECTO (HIT & RUN MODE)
 -- =================================================================
 
 local AutoFarmBTab = _G.AutoFarmBTab 
@@ -65,7 +65,7 @@ local function RemoveAntiGravity()
     if char then
         for _, v in pairs(char:GetDescendants()) do
             if v:IsA("BodyVelocity") and v.Name == "TowerFlyMotor" then v:Destroy() end
-            if v:IsA("BasePart") then v.CanCollide = true end 
+            if v:IsA("BasePart") then v.CanCollide = true end -- ¡Te vuelve sólido y normal!
         end
     end
     if hum then
@@ -76,7 +76,6 @@ local function RemoveAntiGravity()
         root.Velocity = Vector3.zero
         root.RotVelocity = Vector3.zero
     end
-    RunService:UnbindFromRenderStep("TowerGhost")
 end
 
 -- Vuelo Lineal Simple
@@ -107,7 +106,7 @@ local function FlyDirect(TargetCFrame)
     IsTowerFlying = false
 end
 
--- --- [ MATEMÁTICAS DEL TSUNAMI PARA LA TORRE ] ---
+-- --- [ MATEMÁTICAS DEL TSUNAMI ] ---
 local function EsSeguroMatematico(TargetX, TargetZ)
     local folder = workspace:FindFirstChild("ActiveTsunamis")
     if not folder then return true end
@@ -159,18 +158,9 @@ local function LShapeFlyTo(TargetCFrame)
     local PuntoEntradaRiel = CFrame.new(root.Position.X, AlturaSegura, RielSeguroZ)
     local PuntoDeAtaque = CFrame.new(TargetX, AlturaSegura, RielSeguroZ)
 
-    -- 1. Ir al riel seguro
     if math.abs(root.Position.Z - RielSeguroZ) > 10 then FlyDirect(PuntoEntradaRiel) end
-
-    -- 2. Movernos por el riel
     FlyDirect(PuntoDeAtaque)
-
-    -- 3. Esperar a que pase la ola
-    while TowerConfig.AutoFarm and not EsSeguroMatematico(TargetX, TargetZ) do
-        task.wait() 
-    end
-
-    -- 4. Bajar al objetivo
+    while TowerConfig.AutoFarm and not EsSeguroMatematico(TargetX, TargetZ) do task.wait() end
     if TowerConfig.AutoFarm then FlyDirect(TargetCFrame) end
 end
 
@@ -184,6 +174,7 @@ local function GetTowerCalculatedCFrame()
         
     if mainPart then
         local pos = mainPart.Position
+        -- 📍 TUS NUEVAS COORDENADAS EXACTAS
         return CFrame.new(pos.X - 25.6884765625, 6, -2.5)
     end
     return nil
@@ -288,7 +279,10 @@ local function GrabClosestReward()
             prompt.RequiresLineOfSight = false
             prompt.HoldDuration = 0
             for i = 1, 20 do fireproximityprompt(prompt) task.wait(0.01) end
+            
+            -- Huye a la base y camuflaje instantáneo
             LShapeFlyTo(PuntoB) 
+            RemoveAntiGravity()
         end
     end
 end
@@ -305,7 +299,6 @@ AutoFarmBTab:Toggle({
         TowerConfig.AutoFarm = state
         
         if state then
-            -- 🛡️ ¡EL INTERRUPTOR CORRECTO!
             if _G.ToggleAutoCollectPro then
                 _G.ToggleAutoCollectPro(false)
                 warn("Auto-Collect Pro pausado por Tower Event")
@@ -331,6 +324,11 @@ AutoFarmBTab:Toggle({
                                         prompt.RequiresLineOfSight = false
                                         prompt.HoldDuration = 0
                                         fireproximityprompt(prompt)
+                                        
+                                        -- Retirada táctica a la base
+                                        LShapeFlyTo(PuntoB)
+                                        RemoveAntiGravity()
+                                        
                                         task.wait(0.5)
                                         IsDoingTower = false
                                     end
@@ -351,6 +349,10 @@ AutoFarmBTab:Toggle({
                                                 GrabClosestReward()
                                             end
                                         end
+                                        
+                                        -- Termina misión, vuelve a base y actúa normal
+                                        LShapeFlyTo(PuntoB)
+                                        RemoveAntiGravity()
                                         IsDoingTower = false
                                         
                                     else
@@ -360,8 +362,13 @@ AutoFarmBTab:Toggle({
                                             prompt.RequiresLineOfSight = false
                                             prompt.HoldDuration = 0
                                             fireproximityprompt(prompt)
-                                            warn("📦 Entregado! Cooldown de 3s...")
-                                            task.wait(3) 
+                                            warn("📦 Entregado! Volviendo a base a esperar 3.5s...")
+                                            
+                                            -- 🏃‍♂️ RETIRADA TÁCTICA Y CAMUFLAJE
+                                            LShapeFlyTo(PuntoB)
+                                            RemoveAntiGravity() -- El personaje cae al piso, se desactiva noclip
+                                            
+                                            task.wait(3.5) -- Espera los 3.5s siendo un jugador normal y corriente
                                             IsDoingTower = false
                                         else
                                             local reqRarity = GetRequiredRarity()
@@ -392,10 +399,15 @@ AutoFarmBTab:Toggle({
                 end
             end)
             
+            -- 👻 GHOST MODE INTELIGENTE: Solo funciona si estás volando
             RunService:BindToRenderStep("TowerGhost", 1, function()
                 if TowerConfig.AutoFarm and LocalPlayer.Character then
-                    for _,p in pairs(LocalPlayer.Character:GetDescendants()) do 
-                        if p:IsA("BasePart") then p.CanCollide = false end 
+                    local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    -- Si tiene el motor de vuelo, quitamos colisiones. Si no lo tiene, es un jugador normal.
+                    if root and root:FindFirstChild("TowerFlyMotor") then
+                        for _,p in pairs(LocalPlayer.Character:GetDescendants()) do 
+                            if p:IsA("BasePart") then p.CanCollide = false end 
+                        end
                     end
                 end
             end)
