@@ -2,7 +2,7 @@
 -- 🚀 MODULE: AUTO-COLLECT PRO + TOWER TRIAL EVENT (VIRTUAL VIM)
 -- =================================================================
 
-local BetaTab = _G.AutoCollectB
+local BetaTab = _G.AutoFarmBTab
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
