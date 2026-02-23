@@ -1,5 +1,5 @@
 -- =================================================================
--- 🏰 TOWER.LUA - AUTO FARM PERFECTO (V8 - FREE COOLDOWN & EXACT MATCH)
+-- 🏰 TOWER.LUA - AUTO FARM PERFECTO (V9 - FEARLESS & LIVE TRACKING)
 -- =================================================================
 
 local AutoFarmBTab = _G.AutoFarmBTab 
@@ -24,12 +24,12 @@ local TowerConfig = {
 local TowerTween = nil
 local IsTowerFlying = false
 local IsDoingTower = false
-local IsWaitingForCooldown = false -- 🛑 NUEVO: Evita el spam en la base
+local IsWaitingForCooldown = false 
 
 -- --- [ LÓGICA DE VUELO Y BYPASS ] ---
 local function getVelocidadBypass()
     local res = GuiService:GetScreenResolution()
-    return (res.Magnitude * MULTIPLICADOR_MAX) * 0.9 
+    return (res.Magnitude * MULTIPLICADOR_MAX) * 0.95 -- ⚡ Subimos a 95% para más velocidad
 end
 
 local function EnsureAntiGravity()
@@ -67,13 +67,15 @@ local function RemoveAntiGravity()
         hum:ChangeState(Enum.HumanoidStateType.GettingUp)
     end
     if root then root.Velocity = Vector3.zero root.RotVelocity = Vector3.zero end
-    RunService:UnbindFromRenderStep("TowerGhost") -- 🛠️ FIX VUELO: Faltaba esto
+    RunService:UnbindFromRenderStep("TowerGhost") 
 end
 
-local function FlyDirect(TargetCFrame)
+-- ⚡ Vuelo Directo con Rastreo en Vivo (Cancela si el objeto desaparece)
+local function FlyDirect(TargetCFrame, targetObj)
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not root then return end
+    if not root then return false end
     EnsureAntiGravity()
+    
     local currentSpeed = getVelocidadBypass()
     local Dist = (root.Position - TargetCFrame.Position).Magnitude
     local Time = Dist / currentSpeed
@@ -86,14 +88,22 @@ local function FlyDirect(TargetCFrame)
     
     local elapsed = 0
     while IsTowerFlying and elapsed < Time do
+        -- Si apagaste el hack, mueres, o EL OBJETO DESAPARECE, abortar misión
         if not TowerConfig.AutoFarm or LocalPlayer.Character.Humanoid.Health <= 0 then
             if TowerTween then TowerTween:Cancel() end
             IsTowerFlying = false
-            return
+            return false
         end
+        if targetObj and not targetObj.Parent then
+            if TowerTween then TowerTween:Cancel() end
+            IsTowerFlying = false
+            return false -- 🚫 El Brainrot desapareció en pleno vuelo
+        end
+        
         task.wait() elapsed = elapsed + 0.015
     end
     IsTowerFlying = false
+    return true
 end
 
 local function EsSeguroMatematico(TargetX, TargetZ)
@@ -103,7 +113,8 @@ local function EsSeguroMatematico(TargetX, TargetZ)
     if not root then return false end
     local currentSpeed = getVelocidadBypass()
     local DistanciaTotalViaje = math.abs(root.Position.Z - TargetZ) * 2
-    local NuestroTiempoTotal = (DistanciaTotalViaje / currentSpeed) + 1 
+    local NuestroTiempoTotal = (DistanciaTotalViaje / currentSpeed) + 0.5 -- Menos margen, más rápido
+    
     for _, wave in pairs(folder:GetChildren()) do
         local p = wave:IsA("BasePart") and wave or wave:FindFirstChildWhichIsA("BasePart", true)
         if p then
@@ -119,15 +130,34 @@ local function EsSeguroMatematico(TargetX, TargetZ)
     return true
 end
 
-local function LShapeFlyTo(TargetCFrame)
+-- 🧠 VUELO L-SHAPE (AHORA CON "IGNORE WAVES" y TRACKING)
+local function LShapeFlyTo(TargetCFrame, ignoreWaves, targetObj)
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not root then return end
+    if not root then return false end
+    
     local PuntoEntradaRiel = CFrame.new(root.Position.X, AlturaSegura, RielSeguroZ)
     local PuntoDeAtaque = CFrame.new(TargetCFrame.Position.X, AlturaSegura, RielSeguroZ)
-    if math.abs(root.Position.Z - RielSeguroZ) > 10 then FlyDirect(PuntoEntradaRiel) end
-    FlyDirect(PuntoDeAtaque)
-    while TowerConfig.AutoFarm and not EsSeguroMatematico(TargetCFrame.Position.X, TargetCFrame.Position.Z) do task.wait() end
-    if TowerConfig.AutoFarm then FlyDirect(TargetCFrame) end
+    
+    -- 1. Subir al Riel
+    if math.abs(root.Position.Z - RielSeguroZ) > 10 then 
+        if not FlyDirect(PuntoEntradaRiel, targetObj) then return false end
+    end
+    
+    -- 2. Viajar por el Riel
+    if not FlyDirect(PuntoDeAtaque, targetObj) then return false end
+    
+    -- 3. Bajar (Esperando si es necesario)
+    if not ignoreWaves then
+        while TowerConfig.AutoFarm and not EsSeguroMatematico(TargetCFrame.Position.X, TargetCFrame.Position.Z) do 
+            if targetObj and not targetObj.Parent then return false end -- Si muere mientras esperamos la ola
+            task.wait() 
+        end
+    end
+    
+    if TowerConfig.AutoFarm then 
+        return FlyDirect(TargetCFrame, targetObj) 
+    end
+    return false
 end
 
 -- --- [ CLICKS INTELIGENTES ] ---
@@ -173,7 +203,6 @@ local function GetRequiredRarity()
     return nil
 end
 
--- 🛠️ FIX: Ahora saca el texto exacto (Ej: "4/10")
 local function GetCurrentDepositsText()
     local hud = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("TowerTrialHUD")
     if hud and hud:FindFirstChild("TrialBar") and hud.TrialBar.Visible then
@@ -252,7 +281,7 @@ local function GrabClosestReward()
 end
 
 -- =================================================================
--- 🎨 INTERFAZ GRÁFICA Y BUCLE
+-- 🎨 INTERFAZ GRÁFICA Y BUCLE PRINCIPAL
 -- =================================================================
 
 AutoFarmBTab:Section({ Title = "--Tower Event--", Icon = "castle" })
@@ -267,7 +296,7 @@ AutoFarmBTab:Toggle({
             if _G.GodModeEnabled == false and _G.ActivarGodModeTotal then _G.ActivarGodModeTotal(true) end
             
             IsDoingTower = false
-            IsWaitingForCooldown = false -- Reiniciamos el estado
+            IsWaitingForCooldown = false 
             
             task.spawn(function()
                 while TowerConfig.AutoFarm do
@@ -280,39 +309,37 @@ AutoFarmBTab:Toggle({
                             local prompt = GetTowerPrompt()
 
                             if towerPos and prompt then
-                                -- 1. CHECK DE COOLDOWN DE 5 MINUTOS LIBRE 
+                                -- 1. CHECK COOLDOWN
                                 if not prompt.Enabled then
                                     if not IsWaitingForCooldown then
                                         IsWaitingForCooldown = true
                                         warn("⏳ Cooldown activo. Llevándote a base...")
-                                        LShapeFlyTo(PuntoB)
+                                        LShapeFlyTo(PuntoB, true) -- Ignore waves para ir a base
                                         RemoveAntiGravity()
-                                        warn("🆓 Llegaste a base. ¡Eres totalmente libre de moverte hasta que termine el cooldown!")
                                     end
-                                    return -- 🛠️ FIX SPAM: Sale de aquí sin intentar jalarte de nuevo
+                                    return 
                                 else
-                                    IsWaitingForCooldown = false -- Cuando vuelva a estar Enabled, resetea
+                                    IsWaitingForCooldown = false 
                                 end
 
                                 if not IsTrialActive() then
                                     -- INICIAR MISIÓN
                                     if prompt.ActionText == "Start Trial!" then
                                         IsDoingTower = true
-                                        LShapeFlyTo(towerPos)
+                                        LShapeFlyTo(towerPos, true) -- 🛡️ IGNORA OLAS (Torre es segura)
                                         InteractTower(prompt) 
                                         task.wait(0.5)
                                         IsDoingTower = false
                                     end
                                 else
-                                    -- 🛠️ FIX TEXTO: Ahora compara textos exactos. Ej: "4/10" == "4/10"
                                     local currentText = GetCurrentDepositsText()
                                     local targetText = tostring(TowerConfig.TargetDeposits) .. "/10"
                                     
-                                    -- COMPLETAR MISIÓN (Solo si el texto es idéntico a tu elección)
+                                    -- COMPLETAR MISIÓN
                                     if currentText == targetText or prompt.ActionText == "Complete Trial" then
                                         IsDoingTower = true
-                                        LShapeFlyTo(towerPos)
-                                        InteractTower(prompt) -- 1 click para abrir la UI
+                                        LShapeFlyTo(towerPos, true) -- 🛡️ IGNORA OLAS
+                                        InteractTower(prompt) 
                                         
                                         task.wait(0.6) 
                                         if ClickVirtualYes() then
@@ -325,7 +352,7 @@ AutoFarmBTab:Toggle({
                                             end
                                         end
                                         
-                                        LShapeFlyTo(PuntoB)
+                                        LShapeFlyTo(PuntoB, true) -- 🛡️ IGNORA OLAS
                                         RemoveAntiGravity()
                                         IsDoingTower = false
                                         
@@ -333,7 +360,7 @@ AutoFarmBTab:Toggle({
                                         -- ENTREGAR BRAINROT
                                         if HasBrainrotInBack() then
                                             IsDoingTower = true
-                                            LShapeFlyTo(towerPos)
+                                            LShapeFlyTo(towerPos, true) -- 🛡️ IGNORA OLAS
                                             InteractTower(prompt)
                                             
                                             warn("📦 Entregado! Esperando 3.5s nueva rareza en la torre...")
@@ -351,8 +378,14 @@ AutoFarmBTab:Toggle({
                                                     local base = p and p.Parent or targetObj:FindFirstChild("Root")
                                                     
                                                     if p and base then
-                                                        LShapeFlyTo(base.CFrame)
-                                                        SpamBrainrotPrompt(p) 
+                                                        -- ⚠️ AQUÍ SÍ TIENE MIEDO A OLAS (ignoreWaves = false) y RASTREA EL OBJ (targetObj)
+                                                        local success = LShapeFlyTo(base.CFrame, false, targetObj) 
+                                                        
+                                                        if success then
+                                                            SpamBrainrotPrompt(p) 
+                                                        else
+                                                            warn("🔄 Brainrot desapareció o ruta falló. Recalculando...")
+                                                        end
                                                     end
                                                     IsDoingTower = false
                                                 end
