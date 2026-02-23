@@ -1,5 +1,5 @@
 -- =================================================================
--- 🏰 TOWER.LUA - AUTO FARM PERFECTO (HIT & RUN MODE)
+-- 🏰 TOWER.LUA - AUTO FARM PERFECTO (ANTI-NINJA & SMART COOLDOWN)
 -- =================================================================
 
 local AutoFarmBTab = _G.AutoFarmBTab 
@@ -10,13 +10,9 @@ local TweenService = game:GetService("TweenService")
 local GuiService = game:GetService("GuiService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
--- --- [ CONFIGURACIÓN Y PUNTOS ] ---
 local PuntoB = CFrame.new(145, 3, -140)
 local RielSeguroZ = -140
-local RielMinX = 145
-local RielMaxX = 4345
 local AlturaSegura = 3 
-
 local MULTIPLICADOR_MAX = 1 
 
 local TowerConfig = {
@@ -40,7 +36,6 @@ local function EnsureAntiGravity()
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    
     if root and hum then
         local motor = root:FindFirstChild("TowerFlyMotor")
         if not motor then
@@ -58,31 +53,24 @@ local function RemoveAntiGravity()
     local char = LocalPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    
     if TowerTween then TowerTween:Cancel() end
     IsTowerFlying = false
-    
     if char then
         for _, v in pairs(char:GetDescendants()) do
             if v:IsA("BodyVelocity") and v.Name == "TowerFlyMotor" then v:Destroy() end
-            if v:IsA("BasePart") then v.CanCollide = true end -- ¡Te vuelve sólido y normal!
+            if v:IsA("BasePart") then v.CanCollide = true end 
         end
     end
     if hum then
         hum.PlatformStand = false
         hum:ChangeState(Enum.HumanoidStateType.GettingUp)
     end
-    if root then
-        root.Velocity = Vector3.zero
-        root.RotVelocity = Vector3.zero
-    end
+    if root then root.Velocity = Vector3.zero root.RotVelocity = Vector3.zero end
 end
 
--- Vuelo Lineal Simple
 local function FlyDirect(TargetCFrame)
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not root then return end
-
     EnsureAntiGravity()
     local currentSpeed = getVelocidadBypass()
     local Dist = (root.Position - TargetCFrame.Position).Magnitude
@@ -106,77 +94,63 @@ local function FlyDirect(TargetCFrame)
     IsTowerFlying = false
 end
 
--- --- [ MATEMÁTICAS DEL TSUNAMI ] ---
 local function EsSeguroMatematico(TargetX, TargetZ)
     local folder = workspace:FindFirstChild("ActiveTsunamis")
     if not folder then return true end
-
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not root then return false end
-
     local currentSpeed = getVelocidadBypass()
-    local DistanciaViajeSoloIda = math.abs(root.Position.Z - TargetZ)
-    local DistanciaTotalViaje = DistanciaViajeSoloIda * 2
-    local TiempoVuelo = DistanciaTotalViaje / currentSpeed
-    local NuestroTiempoTotal = TiempoVuelo + 0.1 
-
+    local DistanciaTotalViaje = math.abs(root.Position.Z - TargetZ) * 2
+    local NuestroTiempoTotal = (DistanciaTotalViaje / currentSpeed) + 1 -- Añadimos 1s de margen
     for _, wave in pairs(folder:GetChildren()) do
         local p = wave:IsA("BasePart") and wave or wave:FindFirstChildWhichIsA("BasePart", true)
         if p then
             local VelX = p.AssemblyLinearVelocity.X
-            local SpeedOla = math.abs(VelX)
-            if SpeedOla < 10 then SpeedOla = 250 end 
-            
+            local SpeedOla = math.abs(VelX) < 10 and 250 or math.abs(VelX)
             local PosOlaX = p.Position.X
             local DistanciaOlaAlItem = math.abs(PosOlaX - TargetX)
-
             if DistanciaOlaAlItem < 90 then return false end
-
-            local seAcerca = false
-            if VelX > 0 and PosOlaX < TargetX then seAcerca = true end
-            if VelX < 0 and PosOlaX > TargetX then seAcerca = true end
-            if SpeedOla >= 250 and DistanciaOlaAlItem < 1200 then seAcerca = true end 
-
-            if seAcerca then
-                local TiempoOlaLlega = DistanciaOlaAlItem / SpeedOla
-                local Diferencia = TiempoOlaLlega - NuestroTiempoTotal
-                if Diferencia < 0.5 then return false end
-            end
+            local seAcerca = (VelX > 0 and PosOlaX < TargetX) or (VelX < 0 and PosOlaX > TargetX) or (SpeedOla >= 250 and DistanciaOlaAlItem < 1200)
+            if seAcerca and (DistanciaOlaAlItem / SpeedOla) - NuestroTiempoTotal < 0.5 then return false end
         end
     end
     return true
 end
 
--- 🧠 VUELO L-SHAPE (SEGURO)
 local function LShapeFlyTo(TargetCFrame)
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not root then return end
-    
-    local TargetX = TargetCFrame.Position.X
-    local TargetZ = TargetCFrame.Position.Z
-    
     local PuntoEntradaRiel = CFrame.new(root.Position.X, AlturaSegura, RielSeguroZ)
-    local PuntoDeAtaque = CFrame.new(TargetX, AlturaSegura, RielSeguroZ)
-
+    local PuntoDeAtaque = CFrame.new(TargetCFrame.Position.X, AlturaSegura, RielSeguroZ)
     if math.abs(root.Position.Z - RielSeguroZ) > 10 then FlyDirect(PuntoEntradaRiel) end
     FlyDirect(PuntoDeAtaque)
-    while TowerConfig.AutoFarm and not EsSeguroMatematico(TargetX, TargetZ) do task.wait() end
+    while TowerConfig.AutoFarm and not EsSeguroMatematico(TargetCFrame.Position.X, TargetCFrame.Position.Z) do task.wait() end
     if TowerConfig.AutoFarm then FlyDirect(TargetCFrame) end
+end
+
+-- --- [ NUEVO: FRENOS ABSOLUTOS DE 1 SEGUNDO ] ---
+local function FirePromptSafely(prompt, duration)
+    if not prompt then return end
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    
+    prompt.RequiresLineOfSight = false
+    prompt.HoldDuration = 0
+    
+    local start = tick()
+    while tick() - start < duration do
+        if root then 
+            root.Velocity = Vector3.zero -- CONGELADO 100%
+            root.RotVelocity = Vector3.zero 
+        end
+        fireproximityprompt(prompt)
+        task.wait(0.05)
+    end
 end
 
 -- --- [ FUNCIONES DE LA TORRE ] ---
 local function GetTowerCalculatedCFrame()
-    local mainPart = workspace:FindFirstChild("GameObjects") 
-        and workspace.GameObjects:FindFirstChild("PlaceSpecific") 
-        and workspace.GameObjects.PlaceSpecific:FindFirstChild("root") 
-        and workspace.GameObjects.PlaceSpecific.root:FindFirstChild("Tower") 
-        and workspace.GameObjects.PlaceSpecific.root.Tower:FindFirstChild("Main")
-        
-    if mainPart then
-        local pos = mainPart.Position
-        -- 📍 TUS NUEVAS COORDENADAS EXACTAS
-        return CFrame.new(pos.X - 25.6884765625, 6, -2.5)
-    end
+    local mainPart = workspace:FindFirstChild("GameObjects") and workspace.GameObjects:FindFirstChild("PlaceSpecific") and workspace.GameObjects.PlaceSpecific:FindFirstChild("root") and workspace.GameObjects.PlaceSpecific.root:FindFirstChild("Tower") and workspace.GameObjects.PlaceSpecific.root.Tower:FindFirstChild("Main")
+    if mainPart then return CFrame.new(mainPart.Position.X - 25.6884765625, 6, -2.5) end
     return nil
 end
 
@@ -188,8 +162,8 @@ end
 local function GetRequiredRarity()
     local hud = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("TowerTrialHUD")
     if hud and hud:FindFirstChild("TrialBar") and hud.TrialBar.Visible then
-        local reqText = hud.TrialBar:FindFirstChild("Requirement")
-        if reqText then return reqText.Text:match("<font.->(.-)</font>") end
+        local req = hud.TrialBar:FindFirstChild("Requirement")
+        if req then return req.Text:match("<font.->(.-)</font>") end
     end
     return nil
 end
@@ -197,8 +171,8 @@ end
 local function GetCurrentDeposits()
     local hud = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("TowerTrialHUD")
     if hud and hud:FindFirstChild("TrialBar") and hud.TrialBar.Visible then
-        local depText = hud.TrialBar:FindFirstChild("Deposits")
-        if depText then return tonumber(depText.Text:match("(%d+)/%d+")) or 0 end
+        local dep = hud.TrialBar:FindFirstChild("Deposits")
+        if dep then return tonumber(dep.Text:match("(%d+)/%d+")) or 0 end
     end
     return 0
 end
@@ -215,9 +189,7 @@ local function GetBrainrotByRarity(rarityName)
         for _, rf in pairs(f:GetChildren()) do
             if rf.Name:lower() == rarityName:lower() then
                 for _, obj in pairs(rf:GetDescendants()) do
-                    if obj:IsA("Model") and (obj:FindFirstChild("Root") or obj:FindFirstChildWhichIsA("ProximityPrompt", true)) then
-                        return obj
-                    end
+                    if obj:IsA("Model") and (obj:FindFirstChild("Root") or obj:FindFirstChildWhichIsA("ProximityPrompt", true)) then return obj end
                 end
             end
         end 
@@ -251,44 +223,35 @@ local function ClickVirtualYes()
     return false
 end
 
+-- --- [ NUEVO: AUTO REWARD INSTANTÁNEO (ANTI NINJAS) ] ---
 local function GrabClosestReward()
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not root then return end
+    if not root then return false end
     
-    local c, sd = nil, 200 
     local f = workspace:FindFirstChild("ActiveBrainrots")
-    
     if f then 
         for _, obj in pairs(f:GetDescendants()) do 
             if obj:IsA("Model") then
                 local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
                 local part = prompt and prompt.Parent or obj:FindFirstChild("Root")
-                if part then
-                    local d = (root.Position - part.Position).Magnitude
-                    if d < sd then sd = d; c = obj end
+                -- Escanea en un radio de 50 studs (Ya estamos en la torre)
+                if part and (root.Position - part.Position).Magnitude < 50 then
+                    -- TELETRANSPORTE INSTANTÁNEO AL ITEM
+                    root.CFrame = part.CFrame
+                    prompt.RequiresLineOfSight = false
+                    prompt.HoldDuration = 0
+                    for i = 1, 20 do fireproximityprompt(prompt) task.wait(0.01) end
+                    warn("💎 ¡RECOMPENSA ROBADA CON ÉXITO A LOS NINJAS!")
+                    return true
                 end
             end
         end 
     end
-    
-    if c then
-        local prompt = c:FindFirstChildWhichIsA("ProximityPrompt", true)
-        local part = prompt and prompt.Parent or c:FindFirstChild("Root")
-        if part and prompt then
-            LShapeFlyTo(part.CFrame) 
-            prompt.RequiresLineOfSight = false
-            prompt.HoldDuration = 0
-            for i = 1, 20 do fireproximityprompt(prompt) task.wait(0.01) end
-            
-            -- Huye a la base y camuflaje instantáneo
-            LShapeFlyTo(PuntoB) 
-            RemoveAntiGravity()
-        end
-    end
+    return false
 end
 
 -- =================================================================
--- 🎨 INTERFAZ GRÁFICA (WIND UI)
+-- 🎨 INTERFAZ GRÁFICA Y BUCLE
 -- =================================================================
 
 AutoFarmBTab:Section({ Title = "--Tower Event--", Icon = "castle" })
@@ -299,9 +262,12 @@ AutoFarmBTab:Toggle({
         TowerConfig.AutoFarm = state
         
         if state then
-            if _G.ToggleAutoCollectPro then
-                _G.ToggleAutoCollectPro(false)
-                warn("Auto-Collect Pro pausado por Tower Event")
+            if _G.ToggleAutoCollectPro then _G.ToggleAutoCollectPro(false) end
+            
+            -- ACTIVAR GOD MODE AUTOMÁTICO
+            if _G.GodModeEnabled == false and _G.ActivarGodModeTotal then
+                _G.ActivarGodModeTotal(true)
+                warn("🛡️ God Mode Activado para la Torre")
             end
             
             IsDoingTower = false
@@ -317,60 +283,69 @@ AutoFarmBTab:Toggle({
                             local prompt = GetTowerPrompt()
 
                             if towerPos and prompt then
+                                -- 1. CHECK DE COOLDOWN INTELIGENTE
+                                if not prompt.Enabled then
+                                    if (root.Position - PuntoB.Position).Magnitude > 50 then
+                                        LShapeFlyTo(PuntoB)
+                                        RemoveAntiGravity()
+                                    end
+                                    return -- Se detiene y espera en base hasta que Enabled sea true
+                                end
+
                                 if not IsTrialActive() then
+                                    -- INICIAR MISIÓN (Se queda 1 segundo quieto)
                                     if prompt.ActionText == "Start Trial!" then
                                         IsDoingTower = true
                                         LShapeFlyTo(towerPos)
-                                        prompt.RequiresLineOfSight = false
-                                        prompt.HoldDuration = 0
-                                        fireproximityprompt(prompt)
-                                        
-                                        -- Retirada táctica a la base
+                                        FirePromptSafely(prompt, 1) 
                                         LShapeFlyTo(PuntoB)
                                         RemoveAntiGravity()
-                                        
-                                        task.wait(0.5)
                                         IsDoingTower = false
                                     end
                                 else
                                     local current = GetCurrentDeposits()
                                     
+                                    -- COMPLETAR MISIÓN (Solo si alcanzamos la meta elegida en Dropdown)
                                     if current >= TowerConfig.TargetDeposits or prompt.ActionText == "Complete Trial" then
                                         IsDoingTower = true
                                         LShapeFlyTo(towerPos)
-                                        prompt.RequiresLineOfSight = false
-                                        prompt.HoldDuration = 0
-                                        fireproximityprompt(prompt)
+                                        FirePromptSafely(prompt, 1) 
                                         
                                         task.wait(0.6) 
                                         if ClickVirtualYes() then
                                             if TowerConfig.AutoReward then
-                                                task.wait(0.2) 
-                                                GrabClosestReward()
+                                                warn("⏳ Escaneando aparición de recompensa... (Modo Anti-Ninja)")
+                                                local agarrado = false
+                                                -- Espera hasta 3 segundos, escaneando cada milisegundo
+                                                for i = 1, 30 do
+                                                    if GrabClosestReward() then 
+                                                        agarrado = true 
+                                                        break 
+                                                    end
+                                                    task.wait(0.1)
+                                                end
+                                                if not agarrado then warn("❌ Ninguna recompensa spawneó.") end
                                             end
                                         end
                                         
-                                        -- Termina misión, vuelve a base y actúa normal
                                         LShapeFlyTo(PuntoB)
                                         RemoveAntiGravity()
                                         IsDoingTower = false
                                         
                                     else
+                                        -- ENTREGAR BRAINROT (Frenos puestos)
                                         if HasBrainrotInBack() then
                                             IsDoingTower = true
                                             LShapeFlyTo(towerPos)
-                                            prompt.RequiresLineOfSight = false
-                                            prompt.HoldDuration = 0
-                                            fireproximityprompt(prompt)
-                                            warn("📦 Entregado! Volviendo a base a esperar 3.5s...")
+                                            FirePromptSafely(prompt, 1)
+                                            warn("📦 Entregado! Volviendo a base a esperar la interfaz...")
                                             
-                                            -- 🏃‍♂️ RETIRADA TÁCTICA Y CAMUFLAJE
                                             LShapeFlyTo(PuntoB)
-                                            RemoveAntiGravity() -- El personaje cae al piso, se desactiva noclip
-                                            
-                                            task.wait(3.5) -- Espera los 3.5s siendo un jugador normal y corriente
+                                            RemoveAntiGravity()
+                                            task.wait(1) -- Pequeña pausa para que actualice la UI
                                             IsDoingTower = false
                                         else
+                                            -- BUSCAR BRAINROT
                                             local reqRarity = GetRequiredRarity()
                                             if reqRarity then
                                                 local targetObj = GetBrainrotByRarity(reqRarity)
@@ -381,10 +356,7 @@ AutoFarmBTab:Toggle({
                                                     
                                                     if p and base then
                                                         LShapeFlyTo(base.CFrame)
-                                                        p.RequiresLineOfSight = false
-                                                        p.HoldDuration = 0
-                                                        for i = 1, 15 do fireproximityprompt(p) end
-                                                        task.wait(0.1)
+                                                        FirePromptSafely(p, 1) -- Quieto agarrándolo
                                                     end
                                                     IsDoingTower = false
                                                 end
@@ -399,11 +371,9 @@ AutoFarmBTab:Toggle({
                 end
             end)
             
-            -- 👻 GHOST MODE INTELIGENTE: Solo funciona si estás volando
             RunService:BindToRenderStep("TowerGhost", 1, function()
                 if TowerConfig.AutoFarm and LocalPlayer.Character then
                     local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    -- Si tiene el motor de vuelo, quitamos colisiones. Si no lo tiene, es un jugador normal.
                     if root and root:FindFirstChild("TowerFlyMotor") then
                         for _,p in pairs(LocalPlayer.Character:GetDescendants()) do 
                             if p:IsA("BasePart") then p.CanCollide = false end 
