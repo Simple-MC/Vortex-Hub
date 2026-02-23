@@ -184,7 +184,7 @@ local function GetTowerCalculatedCFrame()
         
     if mainPart then
         local pos = mainPart.Position
-        return CFrame.new(pos.X - 21.3, 6, pos.Z - 46.1)
+        return CFrame.new(pos.X - 25.6884765625, 6, -2.5)
     end
     return nil
 end
