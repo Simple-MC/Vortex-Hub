@@ -263,7 +263,7 @@ end
 -- 🎨 INTERFAZ GRÁFICA (WIND UI)
 -- =================================================================
 
-BetaTab:Section({ Title = "--Tower Event--", Icon = "castle" })
+BetaTab:Section({ Title = "--Tower Event--" })
 
 BetaTab:Toggle({
     Title = "⚔️ Auto Farm",
