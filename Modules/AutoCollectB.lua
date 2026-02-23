@@ -17,7 +17,7 @@ local RielMinX = 145
 local RielMaxX = 4345
 local AlturaSegura = 3
 
-local MULTIPLICADOR_MAX = 0.9 -- Extraído de Properties
+local MULTIPLICADOR_MAX = 1 -- Extraído de Properties
 
 local BetaConfig = {
     Enabled = false,
@@ -96,13 +96,6 @@ local function RemoveAntiGravity()
     local root = char and char:FindFirstChild("HumanoidRootPart")
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     
-    -- 1. DETENER EL TWEEN (Si se estaba moviendo, que se detenga seco)
-    if BetaTween then 
-        BetaTween:Cancel() 
-        IsBetaFlying = false
-    end
-
-    -- 2. BORRAR MOTORES FÍSICOS
     if char then
         for _, v in pairs(char:GetDescendants()) do
             if v:IsA("BodyVelocity") and v.Name == "BypassFlyMotor" then
@@ -111,29 +104,15 @@ local function RemoveAntiGravity()
         end
     end
     
-    -- 3. RESET DE ESTADOS DEL HUMANOID
     if hum then
         hum.PlatformStand = false
         hum:ChangeState(Enum.HumanoidStateType.GettingUp)
     end
     
-    -- 4. 🛡️ FIX NOCLIP (DEVOLVER COLISIONES)
-    if char then
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = true -- Aquí le devolvemos la solidez al cuerpo
-            end
-        end
-    end
-
-    -- 5. RESET DE VELOCIDAD RESIDUAL
     if root then
         root.Velocity = Vector3.zero
         root.RotVelocity = Vector3.zero
     end
-    
-    -- 6. DESVINCULAR EL RENDERSTEP DEL NOCLIP
-     RunService:UnbindFromRenderStep("BetaFlyGhost")  
 end
 
 -- --- [ VUELO TÁCTICO CON TWEEN ] ---
