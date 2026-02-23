@@ -1,5 +1,5 @@
 -- =================================================================
--- 🏰 TOWER.LUA - AUTO FARM PERFECTO (V6 - ONE CLICK & NO DETOURS)
+-- 🏰 TOWER.LUA - AUTO FARM PERFECTO (V7 - ONE CLICK & DIVINE SECURE)
 -- =================================================================
 
 local AutoFarmBTab = _G.AutoFarmBTab 
@@ -128,35 +128,40 @@ local function LShapeFlyTo(TargetCFrame)
     if TowerConfig.AutoFarm then FlyDirect(TargetCFrame) end
 end
 
--- --- [ NUEVO: 1 SOLO CLICK Y FRENO ESTÁTICO ] ---
-local function InteractOnceSafely(prompt, waitTime)
+-- --- [ CLICKS INTELIGENTES SEPARADOS ] ---
+
+-- 1. PARA LA TORRE: Solo 1 click exacto
+local function InteractTower(prompt)
     if not prompt then return end
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    
     prompt.RequiresLineOfSight = false
     prompt.HoldDuration = 0
+    if root then root.Velocity = Vector3.zero root.RotVelocity = Vector3.zero end
     
-    -- Frenamos en seco
-    if root then 
-        root.Velocity = Vector3.zero 
-        root.RotVelocity = Vector3.zero 
-    end
+    fireproximityprompt(prompt) -- 🎯 UN SOLO CLICK PRECISO
+end
+
+-- 2. PARA RECOGER BRAINROTS: Spammea para agarrarlo rápido
+local function SpamBrainrotPrompt(prompt)
+    if not prompt then return end
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    prompt.RequiresLineOfSight = false
+    prompt.HoldDuration = 0
+    if root then root.Velocity = Vector3.zero root.RotVelocity = Vector3.zero end
     
-    -- 🎯 ¡UN SOLO CLICK! Así evitamos que reclame la recompensa por error
-    fireproximityprompt(prompt)
-    
-    -- Nos quedamos quietos el tiempo solicitado
-    local start = tick()
-    while tick() - start < waitTime do
-        if root then root.Velocity = Vector3.zero end
-        task.wait(0.05)
+    for i = 1, 15 do -- 🌪️ SPAM PARA ROBAR
+        fireproximityprompt(prompt)
+        task.wait(0.01)
     end
 end
 
 -- --- [ FUNCIONES DE LA TORRE ] ---
 local function GetTowerCalculatedCFrame()
     local mainPart = workspace:FindFirstChild("GameObjects") and workspace.GameObjects:FindFirstChild("PlaceSpecific") and workspace.GameObjects.PlaceSpecific:FindFirstChild("root") and workspace.GameObjects.PlaceSpecific.root:FindFirstChild("Tower") and workspace.GameObjects.PlaceSpecific.root.Tower:FindFirstChild("Main")
-    if mainPart then return CFrame.new(mainPart.Position.X - 25.6884765625, 6, -2.5) end
+    if mainPart then 
+        -- Coordenadas actualizadas al milímetro
+        return CFrame.new(mainPart.Position.X - 25.6884765625, 6, mainPart.Position.Z - 2.5) 
+    end
     return nil
 end
 
@@ -229,7 +234,6 @@ local function ClickVirtualYes()
     return false
 end
 
--- --- [ EL ROBADOR DE RECOMPENSAS (INTOCABLE) ] ---
 local function GrabClosestReward()
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not root then return false end
@@ -240,12 +244,10 @@ local function GrabClosestReward()
             if obj:IsA("Model") then
                 local prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true)
                 local part = prompt and prompt.Parent or obj:FindFirstChild("Root")
-                -- TP Instantáneo si está cerca
-                if part and (root.Position - part.Position).Magnitude < 50 then
+                -- Radio de TP aumentado a 100 por si rebota
+                if part and (root.Position - part.Position).Magnitude < 100 then
                     root.CFrame = part.CFrame
-                    prompt.RequiresLineOfSight = false
-                    prompt.HoldDuration = 0
-                    for i = 1, 20 do fireproximityprompt(prompt) task.wait(0.01) end
+                    SpamBrainrotPrompt(prompt) -- ROBO INSTANTÁNEO
                     warn("💎 ¡RECOMPENSA RECOLECTADA!")
                     return true
                 end
@@ -256,7 +258,7 @@ local function GrabClosestReward()
 end
 
 -- =================================================================
--- 🎨 INTERFAZ GRÁFICA Y BUCLE PRINCIPAL
+-- 🎨 INTERFAZ GRÁFICA Y BUCLE
 -- =================================================================
 
 AutoFarmBTab:Section({ Title = "--Tower Event--", Icon = "castle" })
@@ -286,12 +288,13 @@ AutoFarmBTab:Toggle({
                             local prompt = GetTowerPrompt()
 
                             if towerPos and prompt then
-                                -- 1. CHECK DE COOLDOWN DE 5 MINUTOS (Va a base)
+                                -- 1. CHECK DE COOLDOWN DE 5 MINUTOS (Va a base y espera callado)
                                 if not prompt.Enabled then
                                     if (root.Position - PuntoB.Position).Magnitude > 50 then
                                         LShapeFlyTo(PuntoB)
                                         RemoveAntiGravity()
                                     end
+                                    task.wait(2) -- Duerme 2s sin volar ni hacer nada
                                     return 
                                 end
 
@@ -300,7 +303,8 @@ AutoFarmBTab:Toggle({
                                     if prompt.ActionText == "Start Trial!" then
                                         IsDoingTower = true
                                         LShapeFlyTo(towerPos)
-                                        InteractOnceSafely(prompt, 1) -- 1 solo click, espera 1s
+                                        InteractTower(prompt) -- 1 solo click
+                                        task.wait(0.5)
                                         IsDoingTower = false
                                     end
                                 else
@@ -310,7 +314,7 @@ AutoFarmBTab:Toggle({
                                     if current >= TowerConfig.TargetDeposits or prompt.ActionText == "Complete Trial" then
                                         IsDoingTower = true
                                         LShapeFlyTo(towerPos)
-                                        InteractOnceSafely(prompt, 0.5) -- Click para abrir UI
+                                        InteractTower(prompt) -- 1 click para abrir la UI
                                         
                                         task.wait(0.6) 
                                         if ClickVirtualYes() then
@@ -326,20 +330,21 @@ AutoFarmBTab:Toggle({
                                             end
                                         end
                                         
-                                        -- Misión cumplida -> Retirada táctica a la base
+                                        -- Misión cumplida -> Base
                                         LShapeFlyTo(PuntoB)
                                         RemoveAntiGravity()
                                         IsDoingTower = false
                                         
                                     else
-                                        -- ENTREGAR BRAINROT (En proceso)
+                                        -- ENTREGAR BRAINROT
                                         if HasBrainrotInBack() then
                                             IsDoingTower = true
                                             LShapeFlyTo(towerPos)
-                                            InteractOnceSafely(prompt, 0.2) -- 1 Solo click de entrega
+                                            InteractTower(prompt) -- 1 Solo click para depositar
                                             
-                                            -- SE QUEDA EN LA TORRE 3.5 SEGUNDOS
-                                            warn("📦 Entregado! Esperando 3.5s nueva rareza...")
+                                            -- 🛡️ ESPERA EN LA TORRE (NO VA A LA BASE)
+                                            warn("📦 Entregado! Esperando 3.5s nueva rareza en la torre...")
+                                            if root then root.Velocity = Vector3.zero end
                                             task.wait(3.5)
                                             IsDoingTower = false
                                         else
@@ -354,7 +359,7 @@ AutoFarmBTab:Toggle({
                                                     
                                                     if p and base then
                                                         LShapeFlyTo(base.CFrame)
-                                                        InteractOnceSafely(p, 1) -- 1 Solo click para recoger
+                                                        SpamBrainrotPrompt(p) -- Spam para robarlo rápido
                                                     end
                                                     IsDoingTower = false
                                                 end
@@ -391,13 +396,15 @@ AutoFarmBTab:Toggle({
     Callback = function(state) TowerConfig.AutoReward = state end
 })
 
-local ListaBrainrots = {"1/10", "2/10", "3/10", "4/10", "5/10", "6/10", "7/10", "8/10", "9/10", "10/10"}
+-- 🛑 BUG ARREGLADO: Solo números para que nunca falle la lectura
+local ListaNumeros = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}
 AutoFarmBTab:Dropdown({
-    Title = "🎯 Brainrots Must Take",
+    Title = "🎯 Target Brainrots (1-10)",
     Multi = false,
-    Values = ListaBrainrots,
+    Values = ListaNumeros,
+    Default = "10",
     Callback = function(value)
-        local target = string.match(value, "(%d+)/")
-        if target then TowerConfig.TargetDeposits = tonumber(target) end
+        TowerConfig.TargetDeposits = tonumber(value) or 10
+        warn("🎯 Meta actualizada a: " .. TowerConfig.TargetDeposits .. "/10")
     end
 })
