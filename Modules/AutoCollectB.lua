@@ -17,7 +17,7 @@ local RielMinX = 145
 local RielMaxX = 4345
 local AlturaSegura = 3
 
-local MULTIPLICADOR_MAX = 0.7 -- Extraído de Properties
+local MULTIPLICADOR_MAX = 0.9 -- Extraído de Properties
 
 local BetaConfig = {
     Enabled = false,
