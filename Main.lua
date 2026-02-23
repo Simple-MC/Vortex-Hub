@@ -40,6 +40,7 @@ LoadModule("AutoCollect")
 LoadModule("Settings")
 LoadModule("Sectionex") 
 LoadModule("AutoCollectB") 
+LoadModule("Tower") 
 
 local Keybind = _G.MainTab:Keybind({
     Title = "Keybind",
