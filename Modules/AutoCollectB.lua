@@ -1,5 +1,5 @@
 -- =================================================================
--- 🚀 MODULE: AUTO-COLLECT (BETA) - MACH 5 SPEED + CUSTOM RETURNS
+-- 🚀 MODULE: AUTO-COLLECT PRO - PERFECT FLIGHT & RESOLUTION BYPASS
 -- =================================================================
 
 local AutoFarmBTab = _G.AutoFarmBTab
@@ -8,22 +8,22 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GuiService = game:GetService("GuiService")
 
--- --- [ CONFIGURACIÓN DE PUNTOS ] ---
-local PuntoA = CFrame.new(4345, 3, -140)
+-- --- [ CONFIGURACIÓN DE PUNTOS Y BYPASS ] ---
 local PuntoB = CFrame.new(145, 3, -140) -- BASE DE DESCARGA
-
 local RielSeguroZ = -140
 local RielMinX = 145
 local RielMaxX = 4345
 local AlturaSegura = 3
 
+local MULTIPLICADOR_MAX = 0.7 -- Extraído de Properties
+
 local BetaConfig = {
     Enabled = false,
     RespawnOnStart = false,
-    VolverSiNoHay = false,   -- Botón 1 nuevo
-    VolverAlAgarrar1 = false, -- Botón 2 nuevo
-    Speed = 1650, -- 🚀 MODO JET DE COMBATE ACTIVADO
+    VolverSiNoHay = false,   
+    VolverAlAgarrar1 = false, 
     ActiveFolders = {}, 
     Targets = { LuckyBlocks = false, Brainrots = false },
     Sel = { Lucky = {}, Brain = {} }
@@ -65,45 +65,66 @@ local function ContarCargaActual()
     return count
 end
 
--- --- [ MOTOR ANTI-GRAVEDAD BLINDADO ] ---
+-- 🛡️ CÁLCULO DE VELOCIDAD SEGURA (RESOLUCIÓN)
+local function getVelocidadBypass()
+    local res = GuiService:GetScreenResolution()
+    return (res.Magnitude * MULTIPLICADOR_MAX) * 0.9 -- Volamos al 90% del límite legal
+end
+
+-- --- [ EL NUEVO MOTOR DE VUELO PERFECTO ] ---
 local function EnsureAntiGravity()
-    if not BetaConfig.Enabled then return end -- CANDADO: No crear si está apagado
-    local root = GetRoot()
-    if root then
-        if not root:FindFirstChild("BetaAntiGravity") then
-            local bg = Instance.new("BodyVelocity")
-            bg.Name = "BetaAntiGravity"
-            bg.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-            bg.Velocity = Vector3.zero
-            bg.Parent = root
+    if not BetaConfig.Enabled then return end
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    
+    if root and hum then
+        local motor = root:FindFirstChild("BypassFlyMotor")
+        if not motor then
+            motor = Instance.new("BodyVelocity")
+            motor.Name = "BypassFlyMotor"
+            motor.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            motor.Velocity = Vector3.zero -- Lo mantiene en el aire, el Tween lo mueve
+            motor.Parent = root
         end
+        hum.PlatformStand = true -- Clave para que no resbale
     end
 end
 
 local function RemoveAntiGravity()
-    local root = GetRoot()
-    if root then
-        -- Barrido total y forzado
-        for _, v in pairs(root:GetChildren()) do
-            if v:IsA("BodyVelocity") or v.Name == "BetaAntiGravity" then
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    
+    if char then
+        for _, v in pairs(char:GetDescendants()) do
+            if v:IsA("BodyVelocity") and v.Name == "BypassFlyMotor" then
                 v:Destroy()
             end
         end
-        -- Frenamos el cuerpo en seco
+    end
+    
+    if hum then
+        hum.PlatformStand = false
+        hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+    end
+    
+    if root then
         root.Velocity = Vector3.zero
         root.RotVelocity = Vector3.zero
     end
 end
 
--- --- [ VUELO TÁCTICO EXTREMO ] ---
+-- --- [ VUELO TÁCTICO CON TWEEN ] ---
 local function BetaFlyTo(TargetCFrame)
     local root = GetRoot()
     if not root then return end
 
     EnsureAntiGravity()
 
+    local currentSpeed = getVelocidadBypass()
     local Dist = (root.Position - TargetCFrame.Position).Magnitude
-    local Time = Dist / BetaConfig.Speed
+    local Time = Dist / currentSpeed
     if Time < 0.05 then Time = 0.05 end
 
     if BetaTween then BetaTween:Cancel() end
@@ -115,7 +136,7 @@ local function BetaFlyTo(TargetCFrame)
     local elapsed = 0
     while IsBetaFlying and elapsed < Time do
         if not BetaConfig.Enabled or not GetRoot() or LocalPlayer.Character.Humanoid.Health <= 0 then
-            BetaTween:Cancel()
+            if BetaTween then BetaTween:Cancel() end
             IsBetaFlying = false
             return
         end
@@ -134,9 +155,10 @@ local function EsSeguroMatematico(TargetX, TargetZ)
     local root = GetRoot()
     if not root then return false end
 
+    local currentSpeed = getVelocidadBypass()
     local DistanciaViajeSoloIda = math.abs(root.Position.Z - TargetZ)
     local DistanciaTotalViaje = DistanciaViajeSoloIda * 2
-    local TiempoVuelo = DistanciaTotalViaje / BetaConfig.Speed
+    local TiempoVuelo = DistanciaTotalViaje / currentSpeed
     local TiempoRecoger = 0.1 
     local NuestroTiempoTotal = TiempoVuelo + TiempoRecoger
 
@@ -232,23 +254,12 @@ end
 -- =================================================================
 AutoFarmBTab:Section({ Title = "--[ L-SHAPE HIT & RUN ]--", Icon = "skull" })
 
-AutoFarmBTab:Toggle({
-    Title = "💀 Renacer al Encender (Llegar rápido)",
-    Callback = function(state) BetaConfig.RespawnOnStart = state end
-})
+AutoFarmBTab:Toggle({ Title = "💀 Renacer al Encender (Llegar rápido)", Callback = function(s) BetaConfig.RespawnOnStart = s end })
+AutoFarmBTab:Toggle({ Title = "🏠 Volver a Base si NO hay items", Callback = function(s) BetaConfig.VolverSiNoHay = s end })
+AutoFarmBTab:Toggle({ Title = "📦 Auto-volver al agarrar 1 solo ítem", Callback = function(s) BetaConfig.VolverAlAgarrar1 = s end })
 
 AutoFarmBTab:Toggle({
-    Title = "🏠 Volver a Base si NO hay items en el mapa",
-    Callback = function(state) BetaConfig.VolverSiNoHay = state end
-})
-
-AutoFarmBTab:Toggle({
-    Title = "📦 Auto-volver al agarrar 1 solo ítem",
-    Callback = function(state) BetaConfig.VolverAlAgarrar1 = state end
-})
-
-AutoFarmBTab:Toggle({
-    Title = "⚡ Activar Auto-Collect (Anti-Tsunami)",
+    Title = "⚡ Activar Auto-Collect Pro (Bypass Pantalla)",
     Callback = function(state)
         BetaConfig.Enabled = state
         
@@ -277,7 +288,6 @@ AutoFarmBTab:Toggle({
                             local root = GetRoot()
                             if not root or LocalPlayer.Character.Humanoid.Health <= 0 then return end
 
-                            -- 🎒 LÓGICA DE INVENTARIO INTELIGENTE
                             local LimiteMochila = BetaConfig.VolverAlAgarrar1 and 1 or 3
                             
                             if ContarCargaActual() >= LimiteMochila then
@@ -329,7 +339,6 @@ AutoFarmBTab:Toggle({
                                             end
                                             
                                             Processed[Target] = true
-                                            
                                             BetaFlyTo(PuntoDeAtaque)
                                         end
                                         
@@ -337,7 +346,6 @@ AutoFarmBTab:Toggle({
                                     end)
                                 end
                             else
-                                -- 🏠 LÓGICA DE DESCANSO: ¿Volver a base o quedarse en el riel?
                                 if BetaConfig.VolverSiNoHay then
                                     if (root.Position - PuntoB.Position).Magnitude > 50 then
                                         BetaFlyTo(PuntoB)
@@ -355,7 +363,7 @@ AutoFarmBTab:Toggle({
                 end
             end)
             
-            RunService:BindToRenderStep("BetaFlyStabilizer", 1, function()
+            RunService:BindToRenderStep("BetaFlyGhost", 1, function()
                 if BetaConfig.Enabled and LocalPlayer.Character then
                     for _,p in pairs(LocalPlayer.Character:GetDescendants()) do 
                         if p:IsA("BasePart") then p.CanCollide = false end 
@@ -364,30 +372,19 @@ AutoFarmBTab:Toggle({
             end)
             
         else
-            -- ❌ DESTRUCCIÓN FORZADA DEL VUELO
             if BetaTween then BetaTween:Cancel() end
             IsBetaFlying = false
             IsDoingSequence = false
-            RunService:UnbindFromRenderStep("BetaFlyStabilizer")
+            RunService:UnbindFromRenderStep("BetaFlyGhost")
             
-            RemoveAntiGravity() -- ELIMINA EL BODYVELOCITY Y RESETEA FÍSICAS AL 100%
-            
-            if LocalPlayer.Character then
-                local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                if hum then 
-                    hum.PlatformStand = false 
-                    hum:ChangeState(Enum.HumanoidStateType.GettingUp) 
-                end
-                for _,p in pairs(LocalPlayer.Character:GetDescendants()) do
-                    if p:IsA("BasePart") then p.CanCollide = true end
-                end
-            end
+            -- ¡LA LIMPIEZA PERFECTA SE EJECUTA AQUÍ!
+            RemoveAntiGravity()
         end
     end
 })
 
 -- --- [ SELECCIÓN DE ITEMS ] ---
-AutoFarmBTab:Section({ Title = "--[ EVENTOS LIGEROS ]--" })
+AutoFarmBTab:Section({ Title = "--[ EVENTOS LIGEROS (Al toque) ]--" })
 AutoFarmBTab:Toggle({ Title = "Tickets 🎫", Callback = function(s) BetaConfig.ActiveFolders["ArcadeEventTickets"] = s end })
 AutoFarmBTab:Toggle({ Title = "Consoles 🎮", Callback = function(s) BetaConfig.ActiveFolders["ArcadeEventConsoles"] = s end })
 AutoFarmBTab:Toggle({ Title = "Gold Money 🪙", Callback = function(s) BetaConfig.ActiveFolders["MoneyEventParts"] = s end })
