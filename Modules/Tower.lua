@@ -10,8 +10,8 @@ local TweenService = game:GetService("TweenService")
 local GuiService = game:GetService("GuiService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
-local PuntoB = CFrame.new(145, 3, -140)
-local RielSeguroZ = -140
+local PuntoB = CFrame.new(145, 3, -160)
+local RielSeguroZ = -160
 local AlturaSegura = 3 
 local MULTIPLICADOR_MAX = 1.5 -- 🚀 Sigue rapidísimo
 
