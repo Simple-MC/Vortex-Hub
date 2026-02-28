@@ -37,6 +37,10 @@ local function ObtenerCosasQueEstorban()
         workspace:FindFirstChild("DoomMap_SharedInstances") and workspace.DoomMap_SharedInstances:FindFirstChild("VIPWalls"),
         workspace:FindFirstChild("GameObjects") and workspace.GameObjects:FindFirstChild("PlaceSpecific") and workspace.GameObjects.PlaceSpecific:FindFirstChild("root") and workspace.GameObjects.PlaceSpecific.root:FindFirstChild("Misc") and workspace.GameObjects.PlaceSpecific.root.Misc:FindFirstChild("BrickAddition"),
         workspace:FindFirstChild("DoomMap") and workspace.DoomMap:FindFirstChild("RightWalls")
+        workspace:FindFirstChild("FireAndIceMap") and workspace.DoomMap:FindFirstChild("RightWalls")
+        workspace:FindFirstChild("FireAndIceMap") and workspace.DoomMap:FindFirstChild("Decor")
+        workspace:FindFirstChild("FireAndIceMap_SharedInstances") and workspace.DoomMap:FindFirstChild("VIPWalls")
+        workspace:FindFirstChild("FireAndIceMap") and workspace.DoomMap:FindFirstChild("Walls")
     }
 end
 
