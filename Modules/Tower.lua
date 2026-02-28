@@ -1,5 +1,5 @@
 -- =================================================================
--- 🏰 TOWER.LUA - AUTO FARM PERFECTO (V9 - FEARLESS & LIVE TRACKING)
+-- 🏰 TOWER.LUA - AUTO FARM PERFECTO (V11 - LECTOR DINÁMICO & PRIORIDAD)
 -- =================================================================
 
 local AutoFarmBTab = _G.AutoFarmBTab 
@@ -18,7 +18,7 @@ local MULTIPLICADOR_MAX = 1
 local TowerConfig = {
     AutoFarm = false,
     AutoReward = false,
-    TargetDeposits = 10, 
+    TargetDeposits = 20, -- Actualizado a 20 por defecto
 }
 
 local TowerTween = nil
@@ -29,7 +29,7 @@ local IsWaitingForCooldown = false
 -- --- [ LÓGICA DE VUELO Y BYPASS ] ---
 local function getVelocidadBypass()
     local res = GuiService:GetScreenResolution()
-    return (res.Magnitude * MULTIPLICADOR_MAX) * 0.95 -- ⚡ Subimos a 95% para más velocidad
+    return (res.Magnitude * MULTIPLICADOR_MAX) * 0.95
 end
 
 local function EnsureAntiGravity()
@@ -70,12 +70,11 @@ local function RemoveAntiGravity()
     RunService:UnbindFromRenderStep("TowerGhost") 
 end
 
--- ⚡ Vuelo Directo con Rastreo en Vivo (Cancela si el objeto desaparece)
 local function FlyDirect(TargetCFrame, targetObj)
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not root then return false end
     EnsureAntiGravity()
-    
+
     local currentSpeed = getVelocidadBypass()
     local Dist = (root.Position - TargetCFrame.Position).Magnitude
     local Time = Dist / currentSpeed
@@ -85,10 +84,9 @@ local function FlyDirect(TargetCFrame, targetObj)
     IsTowerFlying = true
     TowerTween = TweenService:Create(root, TweenInfo.new(Time, Enum.EasingStyle.Linear), {CFrame = CFrame.new(TargetCFrame.Position)})
     TowerTween:Play()
-    
+
     local elapsed = 0
     while IsTowerFlying and elapsed < Time do
-        -- Si apagaste el hack, mueres, o EL OBJETO DESAPARECE, abortar misión
         if not TowerConfig.AutoFarm or LocalPlayer.Character.Humanoid.Health <= 0 then
             if TowerTween then TowerTween:Cancel() end
             IsTowerFlying = false
@@ -97,9 +95,8 @@ local function FlyDirect(TargetCFrame, targetObj)
         if targetObj and not targetObj.Parent then
             if TowerTween then TowerTween:Cancel() end
             IsTowerFlying = false
-            return false -- 🚫 El Brainrot desapareció en pleno vuelo
+            return false 
         end
-        
         task.wait() elapsed = elapsed + 0.015
     end
     IsTowerFlying = false
@@ -113,8 +110,8 @@ local function EsSeguroMatematico(TargetX, TargetZ)
     if not root then return false end
     local currentSpeed = getVelocidadBypass()
     local DistanciaTotalViaje = math.abs(root.Position.Z - TargetZ) * 2
-    local NuestroTiempoTotal = (DistanciaTotalViaje / currentSpeed) + 0.5 -- Menos margen, más rápido
-    
+    local NuestroTiempoTotal = (DistanciaTotalViaje / currentSpeed) + 0.5 
+
     for _, wave in pairs(folder:GetChildren()) do
         local p = wave:IsA("BasePart") and wave or wave:FindFirstChildWhichIsA("BasePart", true)
         if p then
@@ -130,30 +127,25 @@ local function EsSeguroMatematico(TargetX, TargetZ)
     return true
 end
 
--- 🧠 VUELO L-SHAPE (AHORA CON "IGNORE WAVES" y TRACKING)
 local function LShapeFlyTo(TargetCFrame, ignoreWaves, targetObj)
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not root then return false end
-    
+
     local PuntoEntradaRiel = CFrame.new(root.Position.X, AlturaSegura, RielSeguroZ)
     local PuntoDeAtaque = CFrame.new(TargetCFrame.Position.X, AlturaSegura, RielSeguroZ)
-    
-    -- 1. Subir al Riel
+
     if math.abs(root.Position.Z - RielSeguroZ) > 10 then 
         if not FlyDirect(PuntoEntradaRiel, targetObj) then return false end
     end
-    
-    -- 2. Viajar por el Riel
     if not FlyDirect(PuntoDeAtaque, targetObj) then return false end
-    
-    -- 3. Bajar (Esperando si es necesario)
+
     if not ignoreWaves then
         while TowerConfig.AutoFarm and not EsSeguroMatematico(TargetCFrame.Position.X, TargetCFrame.Position.Z) do 
-            if targetObj and not targetObj.Parent then return false end -- Si muere mientras esperamos la ola
+            if targetObj and not targetObj.Parent then return false end 
             task.wait() 
         end
     end
-    
+
     if TowerConfig.AutoFarm then 
         return FlyDirect(TargetCFrame, targetObj) 
     end
@@ -182,7 +174,7 @@ local function SpamBrainrotPrompt(prompt)
     end
 end
 
--- --- [ FUNCIONES DE LA TORRE ] ---
+-- --- [ FUNCIONES DE LA TORRE Y HUD ] ---
 local function GetTowerCalculatedCFrame()
     local mainPart = workspace:FindFirstChild("GameObjects") and workspace.GameObjects:FindFirstChild("PlaceSpecific") and workspace.GameObjects.PlaceSpecific:FindFirstChild("root") and workspace.GameObjects.PlaceSpecific.root:FindFirstChild("Tower") and workspace.GameObjects.PlaceSpecific.root.Tower:FindFirstChild("Main")
     if mainPart then return CFrame.new(mainPart.Position.X - 25.6884765625, 6, mainPart.Position.Z - 2.5) end
@@ -194,27 +186,46 @@ local function GetTowerPrompt()
     return m and m:FindFirstChild("Prompt") and m.Prompt:FindFirstChild("ProximityPrompt")
 end
 
+local function IsTrialActive()
+    local hud = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("TowerTrialHUD")
+    return hud and hud:FindFirstChild("TrialBar") and hud.TrialBar.Visible
+end
+
+-- 🛠️ NUEVO: Lector Dinámico (XX/XX) y Lector de Tiempo (00:00)
+local function ShouldCompleteTrial()
+    local hud = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("TowerTrialHUD")
+    if hud and hud:FindFirstChild("TrialBar") and hud.TrialBar.Visible then
+        
+        -- 1. Revisar si llegamos al máximo permitido (XX/XX)
+        local depText = hud.TrialBar:FindFirstChild("Deposits")
+        if depText then
+            local actual, maximo = depText.Text:match("(%d+)/(%d+)")
+            if actual and maximo and tonumber(actual) >= tonumber(maximo) then
+                warn("✅ Meta dinámica alcanzada (" .. actual .. "/" .. maximo .. "). ¡A cobrar!")
+                return true
+            end
+        end
+        
+        -- 2. Revisar si se acabó el tiempo (00:00)
+        local timerText = hud.TrialBar:FindFirstChild("Timer") or hud.TrialBar:FindFirstChild("Time")
+        if timerText then
+            if timerText.Text:find("00:00") or timerText.Text:find("0:00") then
+                warn("⏳ El tiempo se acabó (00:00). ¡Cobrando progreso!")
+                return true
+            end
+        end
+    end
+    return false
+end
+
 local function GetRequiredRarity()
     local hud = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("TowerTrialHUD")
     if hud and hud:FindFirstChild("TrialBar") and hud.TrialBar.Visible then
         local req = hud.TrialBar:FindFirstChild("Requirement")
+        -- Extrae la palabra exacta dentro de la etiqueta font
         if req then return req.Text:match("<font.->(.-)</font>") end
     end
     return nil
-end
-
-local function GetCurrentDepositsText()
-    local hud = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("TowerTrialHUD")
-    if hud and hud:FindFirstChild("TrialBar") and hud.TrialBar.Visible then
-        local dep = hud.TrialBar:FindFirstChild("Deposits")
-        if dep then return dep.Text end 
-    end
-    return "0/10"
-end
-
-local function IsTrialActive()
-    local hud = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("TowerTrialHUD")
-    return hud and hud:FindFirstChild("TrialBar") and hud.TrialBar.Visible
 end
 
 local function GetBrainrotByRarity(rarityName)
@@ -242,6 +253,7 @@ local function HasBrainrotInBack()
     return false
 end
 
+-- Seguimos usando el método de clics seguro virtual (No Delta)
 local function ClickVirtualYes()
     local pGui = LocalPlayer:FindFirstChild("PlayerGui")
     if pGui then
@@ -261,7 +273,7 @@ end
 local function GrabClosestReward()
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not root then return false end
-    
+
     local f = workspace:FindFirstChild("ActiveBrainrots")
     if f then 
         for _, obj in pairs(f:GetDescendants()) do 
@@ -290,14 +302,14 @@ AutoFarmBTab:Toggle({
     Title = "⚔️ Auto Farm",
     Callback = function(state)
         TowerConfig.AutoFarm = state
-        
+
         if state then
             if _G.ToggleAutoCollectPro then _G.ToggleAutoCollectPro(false) end
             if _G.GodModeEnabled == false and _G.ActivarGodModeTotal then _G.ActivarGodModeTotal(true) end
-            
+
             IsDoingTower = false
             IsWaitingForCooldown = false 
-            
+
             task.spawn(function()
                 while TowerConfig.AutoFarm do
                     pcall(function()
@@ -314,7 +326,7 @@ AutoFarmBTab:Toggle({
                                     if not IsWaitingForCooldown then
                                         IsWaitingForCooldown = true
                                         warn("⏳ Cooldown activo. Llevándote a base...")
-                                        LShapeFlyTo(PuntoB, true) -- Ignore waves para ir a base
+                                        LShapeFlyTo(PuntoB, true) 
                                         RemoveAntiGravity()
                                     end
                                     return 
@@ -326,21 +338,31 @@ AutoFarmBTab:Toggle({
                                     -- INICIAR MISIÓN
                                     if prompt.ActionText == "Start Trial!" then
                                         IsDoingTower = true
-                                        LShapeFlyTo(towerPos, true) -- 🛡️ IGNORA OLAS (Torre es segura)
+                                        LShapeFlyTo(towerPos, true) 
                                         InteractTower(prompt) 
                                         task.wait(0.5)
                                         IsDoingTower = false
                                     end
                                 else
-                                    local currentText = GetCurrentDepositsText()
-                                    local targetText = tostring(TowerConfig.TargetDeposits) .. "/10"
+                                    -- 🧠 [NUEVO ORDEN DE PRIORIDADES] 🧠
                                     
-                                    -- COMPLETAR MISIÓN
-                                    if currentText == targetText or prompt.ActionText == "Complete Trial" then
+                                    -- PRIORIDAD 1: Si tienes algo en la espalda, entrégalo sí o sí.
+                                    if HasBrainrotInBack() then
                                         IsDoingTower = true
-                                        LShapeFlyTo(towerPos, true) -- 🛡️ IGNORA OLAS
-                                        InteractTower(prompt) 
+                                        LShapeFlyTo(towerPos, true)
+                                        InteractTower(prompt)
+
+                                        warn("📦 Entregado! Esperando 3.5s nueva rareza en la torre...")
+                                        if root then root.Velocity = Vector3.zero end
+                                        task.wait(3.5)
+                                        IsDoingTower = false
                                         
+                                    -- PRIORIDAD 2: Si no tienes nada y es hora de cobrar (por Límite, Tiempo o Proxy).
+                                    elseif ShouldCompleteTrial() or prompt.ActionText == "Complete Trial" then
+                                        IsDoingTower = true
+                                        LShapeFlyTo(towerPos, true) 
+                                        InteractTower(prompt) 
+
                                         task.wait(0.6) 
                                         if ClickVirtualYes() then
                                             if TowerConfig.AutoReward then
@@ -351,44 +373,31 @@ AutoFarmBTab:Toggle({
                                                 end
                                             end
                                         end
-                                        
-                                        LShapeFlyTo(PuntoB, true) -- 🛡️ IGNORA OLAS
+
+                                        LShapeFlyTo(PuntoB, true) 
                                         RemoveAntiGravity()
                                         IsDoingTower = false
-                                        
+
+                                    -- PRIORIDAD 3: Si no tienes nada y falta progreso, ve a buscar.
                                     else
-                                        -- ENTREGAR BRAINROT
-                                        if HasBrainrotInBack() then
-                                            IsDoingTower = true
-                                            LShapeFlyTo(towerPos, true) -- 🛡️ IGNORA OLAS
-                                            InteractTower(prompt)
-                                            
-                                            warn("📦 Entregado! Esperando 3.5s nueva rareza en la torre...")
-                                            if root then root.Velocity = Vector3.zero end
-                                            task.wait(3.5)
-                                            IsDoingTower = false
-                                        else
-                                            -- BUSCAR BRAINROT
-                                            local reqRarity = GetRequiredRarity()
-                                            if reqRarity then
-                                                local targetObj = GetBrainrotByRarity(reqRarity)
-                                                if targetObj then
-                                                    IsDoingTower = true
-                                                    local p = targetObj:FindFirstChildWhichIsA("ProximityPrompt", true)
-                                                    local base = p and p.Parent or targetObj:FindFirstChild("Root")
-                                                    
-                                                    if p and base then
-                                                        -- ⚠️ AQUÍ SÍ TIENE MIEDO A OLAS (ignoreWaves = false) y RASTREA EL OBJ (targetObj)
-                                                        local success = LShapeFlyTo(base.CFrame, false, targetObj) 
-                                                        
-                                                        if success then
-                                                            SpamBrainrotPrompt(p) 
-                                                        else
-                                                            warn("🔄 Brainrot desapareció o ruta falló. Recalculando...")
-                                                        end
+                                        local reqRarity = GetRequiredRarity()
+                                        if reqRarity then
+                                            local targetObj = GetBrainrotByRarity(reqRarity)
+                                            if targetObj then
+                                                IsDoingTower = true
+                                                local p = targetObj:FindFirstChildWhichIsA("ProximityPrompt", true)
+                                                local base = p and p.Parent or targetObj:FindFirstChild("Root")
+
+                                                if p and base then
+                                                    local success = LShapeFlyTo(base.CFrame, false, targetObj) 
+
+                                                    if success then
+                                                        SpamBrainrotPrompt(p) 
+                                                    else
+                                                        warn("🔄 Brainrot desapareció o ruta falló. Recalculando...")
                                                     end
-                                                    IsDoingTower = false
                                                 end
+                                                IsDoingTower = false
                                             end
                                         end
                                     end
@@ -399,7 +408,7 @@ AutoFarmBTab:Toggle({
                     task.wait(0.1)
                 end
             end)
-            
+
             RunService:BindToRenderStep("TowerGhost", 1, function()
                 if TowerConfig.AutoFarm and LocalPlayer.Character then
                     local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -410,7 +419,7 @@ AutoFarmBTab:Toggle({
                     end
                 end
             end)
-            
+
         else
             RemoveAntiGravity()
         end
@@ -422,14 +431,15 @@ AutoFarmBTab:Toggle({
     Callback = function(state) TowerConfig.AutoReward = state end
 })
 
-local ListaNumeros = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}
+-- Dropdown actualizado de 1 a 20 (y se queda en 20 por defecto)
+local ListaNumeros = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"}
 AutoFarmBTab:Dropdown({
-    Title = "🎯 Target Brainrots (1-10)",
+    Title = "🎯 Target Brainrots (Máx)",
     Multi = false,
     Values = ListaNumeros,
-    Default = "10",
+    Default = "20",
     Callback = function(value)
-        TowerConfig.TargetDeposits = tonumber(value) or 10
-        warn("🎯 Meta actualizada a: " .. TowerConfig.TargetDeposits .. "/10")
+        TowerConfig.TargetDeposits = tonumber(value) or 20
+        warn("🎯 Meta actualizada a: " .. TowerConfig.TargetDeposits)
     end
 })
