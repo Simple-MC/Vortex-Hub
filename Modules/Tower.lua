@@ -1,5 +1,5 @@
 -- =================================================================
--- 🏰 TOWER.LUA - V14 CORREGIDO (SINTAXIS REPARADA)
+-- 🏰 TOWER.LUA - V15 (RUTA SEGURA OBLIGATORIA & CAÍDA SIN MIEDO)
 -- =================================================================
 
 local AutoFarmBTab = _G.AutoFarmBTab 
@@ -13,7 +13,7 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local PuntoB = CFrame.new(145, 3, -140)
 local RielSeguroZ = -140
 local AlturaSegura = 3 
-local MULTIPLICADOR_MAX = 1.5 -- 🚀 VELOCIDAD AUMENTADA
+local MULTIPLICADOR_MAX = 1.5 -- 🚀 Sigue rapidísimo
 
 local TowerConfig = {
     AutoFarm = false,
@@ -26,7 +26,7 @@ local IsTowerFlying = false
 local IsDoingTower = false
 local IsWaitingForCooldown = false 
 
--- --- [ LÓGICA DE VUELO ULTRA RÁPIDO ] ---
+-- --- [ MOTOR DE VUELO ] ---
 local function getVelocidadBypass()
     local res = GuiService:GetScreenResolution()
     return (res.Magnitude * MULTIPLICADOR_MAX) * 0.95
@@ -127,23 +127,22 @@ local function EsSeguroMatematico(TargetX, TargetZ)
     return true
 end
 
--- --- [ NUEVA RUTA: RIEL -> X PERFECTO -> CAÍDA ] ---
+-- --- [ 🛠️ RUTA L-SHAPE ARREGLADA ] ---
 local function LShapeFlyTo(TargetCFrame, esTorre, targetObj)
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not root then return false end
 
-    if esTorre then
-        return FlyDirect(TargetCFrame, targetObj)
-    end
-
+    -- 1. OBLIGATORIO: Subir al Riel Seguro primero (Z = -140)
     local PuntoEntradaRiel = CFrame.new(root.Position.X, AlturaSegura, RielSeguroZ)
     if math.abs(root.Position.Z - RielSeguroZ) > 10 then 
         if not FlyDirect(PuntoEntradaRiel, targetObj) then return false end
     end
 
+    -- 2. OBLIGATORIO: Viajar seguro por la autopista del riel
     local PuntoDeAtaque = CFrame.new(TargetCFrame.Position.X, AlturaSegura, RielSeguroZ)
     if not FlyDirect(PuntoDeAtaque, targetObj) then return false end
 
+    -- 3. Si vamos por un ítem, cuidarnos de las olas. Si vamos a la torre, ignorar este paso.
     if not esTorre then
         while TowerConfig.AutoFarm and not EsSeguroMatematico(TargetCFrame.Position.X, TargetCFrame.Position.Z) do 
             if targetObj and not targetObj.Parent then return false end 
@@ -151,13 +150,14 @@ local function LShapeFlyTo(TargetCFrame, esTorre, targetObj)
         end
     end
 
+    -- 4. Caída final hacia el objetivo (Desde la seguridad del riel)
     if TowerConfig.AutoFarm then 
         return FlyDirect(TargetCFrame, targetObj) 
     end
     return false
 end
 
--- --- [ INTERACCIONES Y LECTORES ESTRICTOS ] ---
+-- --- [ INTERACCIONES ] ---
 local function InteractTower(prompt)
     if not prompt then return end
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -251,13 +251,13 @@ local function GrabClosestReward()
 end
 
 -- =================================================================
--- 🚀 BUCLE PRINCIPAL Y GRÁFICOS
+-- 🚀 BUCLE PRINCIPAL
 -- =================================================================
 
 AutoFarmBTab:Section({ Title = "--Tower Event--", Icon = "castle" })
 
 AutoFarmBTab:Toggle({
-    Title = "⚔️ Auto Farm V14",
+    Title = "⚔️ Auto Farm V15",
     Callback = function(state)
         TowerConfig.AutoFarm = state
         if state then
@@ -305,7 +305,6 @@ AutoFarmBTab:Toggle({
                                         IsDoingTower = false
                                     end
                                 else
-                                    -- 1️⃣ PRIORIDAD: ENTREGAR
                                     local hasBrainrot = false
                                     for _, v in pairs(LocalPlayer.Character:GetChildren()) do
                                         if v:IsA("Model") and (v.Name:find("Brainrot") or v.Name:find("NaturalSpawn")) then hasBrainrot = true break end
@@ -313,14 +312,13 @@ AutoFarmBTab:Toggle({
 
                                     if hasBrainrot then
                                         IsDoingTower = true
-                                        LShapeFlyTo(towerPos, true) 
+                                        LShapeFlyTo(towerPos, true) -- ✨ Ahora sí viajará por el riel
                                         InteractTower(prompt)
-                                        warn("📦 Entregado! Esperando 3.5s nueva UI...")
+                                        warn("📦 Entregado! Esperando 3.5s...")
                                         if root then root.Velocity = Vector3.zero end
                                         task.wait(3.5) 
                                         IsDoingTower = false
                                         
-                                    -- 2️⃣ PRIORIDAD: COBRAR
                                     elseif ShouldCompleteTrial() then
                                         IsDoingTower = true
                                         LShapeFlyTo(towerPos, true) 
@@ -344,7 +342,6 @@ AutoFarmBTab:Toggle({
                                         RemoveAntiGravity()
                                         IsDoingTower = false
 
-                                    -- 3️⃣ PRIORIDAD: BUSCAR MÁS
                                     else
                                         local reqRarity = nil
                                         if hud.TrialBar:FindFirstChild("Requirement") then reqRarity = hud.TrialBar.Requirement.Text:match("<font.->(.-)</font>") end
@@ -379,7 +376,7 @@ AutoFarmBTab:Toggle({
                                     end
                                 end
                             end
-                        end -- ✨ ¡AQUÍ ESTÁ EL END QUE FALTABA! ✨
+                        end
                     end)
                     task.wait(0.1)
                 end
