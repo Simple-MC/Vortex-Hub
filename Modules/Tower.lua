@@ -1,5 +1,5 @@
 -- =================================================================
--- 🏰 TOWER.LUA - V14 COMPLETO (RUTA L-SHAPE REAL & VELOCIDAD EXTREMA)
+-- 🏰 TOWER.LUA - V14 CORREGIDO (SINTAXIS REPARADA)
 -- =================================================================
 
 local AutoFarmBTab = _G.AutoFarmBTab 
@@ -133,21 +133,17 @@ local function LShapeFlyTo(TargetCFrame, esTorre, targetObj)
     if not root then return false end
 
     if esTorre then
-        -- Si es a la torre, volar directo sin escalas (No hay olas ahí)
         return FlyDirect(TargetCFrame, targetObj)
     end
 
-    -- 1. Subir al Riel Seguro (Solo si no estamos en él)
     local PuntoEntradaRiel = CFrame.new(root.Position.X, AlturaSegura, RielSeguroZ)
     if math.abs(root.Position.Z - RielSeguroZ) > 10 then 
         if not FlyDirect(PuntoEntradaRiel, targetObj) then return false end
     end
 
-    -- 2. Viajar rapidísimo por el riel hasta quedar exactamente frente al objetivo
     local PuntoDeAtaque = CFrame.new(TargetCFrame.Position.X, AlturaSegura, RielSeguroZ)
     if not FlyDirect(PuntoDeAtaque, targetObj) then return false end
 
-    -- 3. Si vamos a un Brainrot, esperar ola segura
     if not esTorre then
         while TowerConfig.AutoFarm and not EsSeguroMatematico(TargetCFrame.Position.X, TargetCFrame.Position.Z) do 
             if targetObj and not targetObj.Parent then return false end 
@@ -155,7 +151,6 @@ local function LShapeFlyTo(TargetCFrame, esTorre, targetObj)
         end
     end
 
-    -- 4. Caída directa
     if TowerConfig.AutoFarm then 
         return FlyDirect(TargetCFrame, targetObj) 
     end
@@ -222,7 +217,6 @@ local function ClickVirtualYes()
     if pGui then
         local yesBtn = pGui:FindFirstChild("ChoiceGui") and pGui.ChoiceGui:FindFirstChild("Choice") and pGui.ChoiceGui.Choice:FindFirstChild("Choices") and pGui.ChoiceGui.Choice.Choices:FindFirstChild("Yes")
         if yesBtn and yesBtn.Visible then
-            -- 🎯 CORRECCIÓN PARA CELULAR: +36 de Inset (Barra de notificaciones)
             local x = yesBtn.AbsolutePosition.X + (yesBtn.AbsoluteSize.X / 2)
             local y = yesBtn.AbsolutePosition.Y + (yesBtn.AbsoluteSize.Y / 2) + 36 
             VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 1)
@@ -305,7 +299,7 @@ AutoFarmBTab:Toggle({
                                 if not isTrialActive then
                                     if prompt.ActionText == "Start Trial!" then
                                         IsDoingTower = true
-                                        LShapeFlyTo(towerPos, true) -- Directo a torre
+                                        LShapeFlyTo(towerPos, true) 
                                         InteractTower(prompt) 
                                         task.wait(0.5)
                                         IsDoingTower = false
@@ -319,17 +313,17 @@ AutoFarmBTab:Toggle({
 
                                     if hasBrainrot then
                                         IsDoingTower = true
-                                        LShapeFlyTo(towerPos, true) -- Directo a torre
+                                        LShapeFlyTo(towerPos, true) 
                                         InteractTower(prompt)
                                         warn("📦 Entregado! Esperando 3.5s nueva UI...")
                                         if root then root.Velocity = Vector3.zero end
-                                        task.wait(3.5) -- ⏰ ESPERA RESTAURADA
+                                        task.wait(3.5) 
                                         IsDoingTower = false
                                         
                                     -- 2️⃣ PRIORIDAD: COBRAR
                                     elseif ShouldCompleteTrial() then
                                         IsDoingTower = true
-                                        LShapeFlyTo(towerPos, true) -- Directo a torre
+                                        LShapeFlyTo(towerPos, true) 
                                         InteractTower(prompt) 
 
                                         task.wait(0.6) 
@@ -375,52 +369,52 @@ AutoFarmBTab:Toggle({
                                                 local p = targetObj:FindFirstChildWhichIsA("ProximityPrompt", true)
                                                 local base = p and p.Parent or targetObj:FindFirstChild("Root")
 
-                                                    if p and base then
-                                                        -- L-Shape para ir por el item (esTorre = false)
-                                                        local success = LShapeFlyTo(base.CFrame, false, targetObj) 
-                                                        if success then SpamBrainrotPrompt(p) end
-                                                    end
+                                                if p and base then
+                                                    local success = LShapeFlyTo(base.CFrame, false, targetObj) 
+                                                    if success then SpamBrainrotPrompt(p) end
+                                                end
                                                 IsDoingTower = false
                                             end
                                         end
                                     end
                                 end
                             end
-                        end)
-                        task.wait(0.1)
-                    end
-                end)
+                        end -- ✨ ¡AQUÍ ESTÁ EL END QUE FALTABA! ✨
+                    end)
+                    task.wait(0.1)
+                end
+            end)
 
-                -- Bucle Fantasma (Noclip)
-                RunService:BindToRenderStep("TowerGhost", 1, function()
-                    if TowerConfig.AutoFarm and LocalPlayer.Character then
-                        local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        if root and root:FindFirstChild("TowerFlyMotor") then
-                            for _,p in pairs(LocalPlayer.Character:GetDescendants()) do 
-                                if p:IsA("BasePart") then p.CanCollide = false end 
-                            end
+            RunService:BindToRenderStep("TowerGhost", 1, function()
+                if TowerConfig.AutoFarm and LocalPlayer.Character then
+                    local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if root and root:FindFirstChild("TowerFlyMotor") then
+                        for _,p in pairs(LocalPlayer.Character:GetDescendants()) do 
+                            if p:IsA("BasePart") then p.CanCollide = false end 
                         end
                     end
-                end)
-            else
-                RemoveAntiGravity()
-            end
-        end
-    })
+                end
+            end)
 
-    AutoFarmBTab:Toggle({
-        Title = "💎 Auto Brainrot Reward",
-        Callback = function(state) TowerConfig.AutoReward = state end
-    })
-
-    local ListaNumeros = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"}
-    AutoFarmBTab:Dropdown({
-        Title = "🎯 Target Brainrots (Máx)",
-        Multi = false,
-        Values = ListaNumeros,
-        Default = "20",
-        Callback = function(value)
-            TowerConfig.TargetDeposits = tonumber(value) or 20
-            warn("🎯 Meta actualizada a: " .. TowerConfig.TargetDeposits)
+        else
+            RemoveAntiGravity()
         end
-    })
+    end
+})
+
+AutoFarmBTab:Toggle({
+    Title = "💎 Auto Brainrot Reward",
+    Callback = function(state) TowerConfig.AutoReward = state end
+})
+
+local ListaNumeros = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"}
+AutoFarmBTab:Dropdown({
+    Title = "🎯 Target Brainrots (Máx)",
+    Multi = false,
+    Values = ListaNumeros,
+    Default = "20",
+    Callback = function(value)
+        TowerConfig.TargetDeposits = tonumber(value) or 20
+        warn("🎯 Meta actualizada a: " .. TowerConfig.TargetDeposits)
+    end
+})
