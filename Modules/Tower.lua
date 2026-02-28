@@ -1,5 +1,5 @@
 -- =================================================================
--- 🏰 TOWER.LUA - AUTO FARM PERFECTO (V11 - LECTOR DINÁMICO & PRIORIDAD)
+-- 🏰 TOWER.LUA - AUTO FARM PERFECTO (V12 - MODO ESTRICTO UI)
 -- =================================================================
 
 local AutoFarmBTab = _G.AutoFarmBTab 
@@ -18,7 +18,7 @@ local MULTIPLICADOR_MAX = 1
 local TowerConfig = {
     AutoFarm = false,
     AutoReward = false,
-    TargetDeposits = 20, -- Actualizado a 20 por defecto
+    TargetDeposits = 20, 
 }
 
 local TowerTween = nil
@@ -67,7 +67,7 @@ local function RemoveAntiGravity()
         hum:ChangeState(Enum.HumanoidStateType.GettingUp)
     end
     if root then root.Velocity = Vector3.zero root.RotVelocity = Vector3.zero end
-    RunService:UnbindFromRenderStep("TowerGhost") 
+    pcall(function() RunService:UnbindFromRenderStep("TowerGhost") end)
 end
 
 local function FlyDirect(TargetCFrame, targetObj)
@@ -191,7 +191,7 @@ local function IsTrialActive()
     return hud and hud:FindFirstChild("TrialBar") and hud.TrialBar.Visible
 end
 
--- 🛠️ NUEVO: Lector Dinámico (XX/XX) y Lector de Tiempo (00:00)
+-- 🛠️ LECTOR ESTRICTO: Solo UI (Ignora el texto falso del botón)
 local function ShouldCompleteTrial()
     local hud = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("TowerTrialHUD")
     if hud and hud:FindFirstChild("TrialBar") and hud.TrialBar.Visible then
@@ -201,7 +201,7 @@ local function ShouldCompleteTrial()
         if depText then
             local actual, maximo = depText.Text:match("(%d+)/(%d+)")
             if actual and maximo and tonumber(actual) >= tonumber(maximo) then
-                warn("✅ Meta dinámica alcanzada (" .. actual .. "/" .. maximo .. "). ¡A cobrar!")
+                warn("✅ Meta de la UI alcanzada (" .. actual .. "/" .. maximo .. "). ¡A cobrar!")
                 return true
             end
         end
@@ -210,7 +210,7 @@ local function ShouldCompleteTrial()
         local timerText = hud.TrialBar:FindFirstChild("Timer") or hud.TrialBar:FindFirstChild("Time")
         if timerText then
             if timerText.Text:find("00:00") or timerText.Text:find("0:00") then
-                warn("⏳ El tiempo se acabó (00:00). ¡Cobrando progreso!")
+                warn("⏳ El tiempo de la UI se acabó (00:00). ¡Cobrando progreso!")
                 return true
             end
         end
@@ -222,7 +222,6 @@ local function GetRequiredRarity()
     local hud = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("TowerTrialHUD")
     if hud and hud:FindFirstChild("TrialBar") and hud.TrialBar.Visible then
         local req = hud.TrialBar:FindFirstChild("Requirement")
-        -- Extrae la palabra exacta dentro de la etiqueta font
         if req then return req.Text:match("<font.->(.-)</font>") end
     end
     return nil
@@ -253,7 +252,6 @@ local function HasBrainrotInBack()
     return false
 end
 
--- Seguimos usando el método de clics seguro virtual (No Delta)
 local function ClickVirtualYes()
     local pGui = LocalPlayer:FindFirstChild("PlayerGui")
     if pGui then
@@ -335,7 +333,7 @@ AutoFarmBTab:Toggle({
                                 end
 
                                 if not IsTrialActive() then
-                                    -- INICIAR MISIÓN
+                                    -- INICIAR MISIÓN (Aquí sí usamos el botón porque no hay UI todavía)
                                     if prompt.ActionText == "Start Trial!" then
                                         IsDoingTower = true
                                         LShapeFlyTo(towerPos, true) 
@@ -344,9 +342,9 @@ AutoFarmBTab:Toggle({
                                         IsDoingTower = false
                                     end
                                 else
-                                    -- 🧠 [NUEVO ORDEN DE PRIORIDADES] 🧠
+                                    -- 🧠 [NUEVO ORDEN DE PRIORIDADES - VERSIÓN ESTRICTA] 🧠
                                     
-                                    -- PRIORIDAD 1: Si tienes algo en la espalda, entrégalo sí o sí.
+                                    -- PRIORIDAD 1: Si tienes algo en la espalda, entrégalo.
                                     if HasBrainrotInBack() then
                                         IsDoingTower = true
                                         LShapeFlyTo(towerPos, true)
@@ -357,8 +355,9 @@ AutoFarmBTab:Toggle({
                                         task.wait(3.5)
                                         IsDoingTower = false
                                         
-                                    -- PRIORIDAD 2: Si no tienes nada y es hora de cobrar (por Límite, Tiempo o Proxy).
-                                    elseif ShouldCompleteTrial() or prompt.ActionText == "Complete Trial" then
+                                    -- PRIORIDAD 2: SOLO cobrar si la UI dice que está lleno (XX/XX) o el tiempo acabó (00:00).
+                                    -- 🚫 YA NO LE CREEMOS AL PROXY FALSO
+                                    elseif ShouldCompleteTrial() then
                                         IsDoingTower = true
                                         LShapeFlyTo(towerPos, true) 
                                         InteractTower(prompt) 
@@ -378,7 +377,7 @@ AutoFarmBTab:Toggle({
                                         RemoveAntiGravity()
                                         IsDoingTower = false
 
-                                    -- PRIORIDAD 3: Si no tienes nada y falta progreso, ve a buscar.
+                                    -- PRIORIDAD 3: Buscar más si la UI no dice que ya acabamos.
                                     else
                                         local reqRarity = GetRequiredRarity()
                                         if reqRarity then
