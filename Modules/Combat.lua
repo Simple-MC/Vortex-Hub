@@ -40,7 +40,7 @@ local function ObtenerCosasQueEstorban()
         workspace:FindFirstChild("FireAndIceMap") and workspace.DoomMap:FindFirstChild("RightWalls"),
         workspace:FindFirstChild("FireAndIceMap") and workspace.DoomMap:FindFirstChild("Decor"),
         workspace:FindFirstChild("FireAndIceMap_SharedInstances") and workspace.DoomMap:FindFirstChild("VIPWalls"),
-        workspace:FindFirstChild("FireAndIceMap") and workspace.DoomMap:FindFirstChild("Walls")
+        workspace:FindFirstChild("FireAndIceMap") and workspace.DoomMap:FindFirstChild("Walls"),
     }
 end
 
