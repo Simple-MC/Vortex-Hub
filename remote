@@ -1,0 +1,17 @@
+local args = {
+	"Upgrade Brainrot",
+	"{2d65feef-89b0-4ba7-9591-bd147fc8183e}",
+	"8"
+}
+game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Remotes"):WaitForChild("Networking"):WaitForChild("RF/PlotAction"):InvokeServer(unpack(args))
+
+
+
+
+
+local args = {
+	"Collect Money",
+	"{2d65feef-89b0-4ba7-9591-bd147fc8183e}",
+	"9"
+}
+game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Remotes"):WaitForChild("Networking"):WaitForChild("RF/PlotAction"):InvokeServer(unpack(args))
