@@ -49,4 +49,40 @@ game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunctions"):WaitForChil
 
 
 
+local args = {
+	"Place Brainrot",
+	"{a8be3ae0-4166-4073-9c5f-086e239039b7}",
+	"7"
+}
+game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Remotes"):WaitForChild("Networking"):WaitForChild("RF/PlotAction"):InvokeServer(unpack(args))
+
+
+
+
+
+
+
+
+local args = {
+	"Pick Up Brainrot",
+	"{a8be3ae0-4166-4073-9c5f-086e239039b7}",
+	"8"
+}
+game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Remotes"):WaitForChild("Networking"):WaitForChild("RF/PlotAction"):InvokeServer(unpack(args))
+
+
+
+
+
+
+
+
+local args = {
+	"Sell Brainrot",
+	"{a8be3ae0-4166-4073-9c5f-086e239039b7}",
+	"6"
+}
+game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Remotes"):WaitForChild("Networking"):WaitForChild("RF/PlotAction"):InvokeServer(unpack(args))
+
+
 
