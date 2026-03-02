@@ -19,25 +19,32 @@ local function LimpiarTexto(texto)
 end
 
 local function buscar()
-    local lo = workspace:FindFirstChild("GameObjects")
-    local la = lo:FindFirstChild("PlaceSpecific")
-    local le = la:FindFirstChild("root")
-    local m = le:FindFirstChild("EventTimers")
-    if not m then return end
+    local gameObjects = workspace:FindFirstChild("GameObjects")
+    if not gameObjects then return end
     
-    for _, p in pairs(m:GetChildren()) do
-        local f = p:FindFirstChildOfClass("SurfaceGui") and p.SurfaceGui:FindFirstChildOfClass("Frame")
-        if f then
-            local t1 = f:FindFirstChild("TextLabel")
-            -- Buscamos BRAINROT o CELESTIAL por si el evento cambia
+    local placeSpecific = gameObjects:FindFirstChild("PlaceSpecific")
+    if not placeSpecific then return end
+    
+    local root = placeSpecific:FindFirstChild("root")
+    if not root then return end
+    
+    local eventTimers = root:FindFirstChild("EventTimers")
+    if not eventTimers then return end
+    
+    for _, p in pairs(eventTimers:GetChildren()) do
+        local sGui = p:FindFirstChildOfClass("SurfaceGui")
+        local frame = sGui and sGui:FindFirstChildOfClass("Frame")
+        
+        if frame then
+            local t1 = frame:FindFirstChild("TextLabel")
             if t1 then
-                local textoMayusculas = string.upper(t1.Text)
-                if string.find(textoMayusculas, "CELESTIAL") or string.find(textoMayusculas, "BRAINROT") then 
+                local texto = string.upper(t1.Text)
+                if string.find(texto, "CELESTIAL") or string.find(texto, "BRAINROT") then 
                     lC = t1 
                 end
             end
             
-            local t2 = f:FindFirstChild("TextLabel2")
+            local t2 = frame:FindFirstChild("TextLabel2")
             if t2 and t2.Text ~= "" then 
                 lD = t2 
             end
