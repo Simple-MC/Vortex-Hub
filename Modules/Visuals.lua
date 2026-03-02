@@ -19,7 +19,7 @@ local function LimpiarTexto(texto)
 end
 
 local function buscar()
-    local m = workspace:FindFirstChild("EventTimers")
+    local m = workspace:FindFirstChild("GameObjects") and GameObjects:FindFirstChild("PlaceSpecific") and PlaceSpecific:FindFirstChild("root") and root:FindFirstChild("EventTimers")
     if not m then return end
     
     for _, p in pairs(m:GetChildren()) do
