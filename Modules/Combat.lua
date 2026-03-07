@@ -44,6 +44,7 @@ local function ObtenerCosasQueEstorban()
         workspace:FindFirstChild("PhantomMap") and workspace.PhantomMap:FindFirstChild("Walls"),
         workspace:FindFirstChild("PhantomMap_SharedInstances") and workspace.PhantomMap_SharedInstances:FindFirstChild("VIPWalls"),
         workspace:FindFirstChild("PhantomMap") and workspace.PhantomMap:FindFirstChild("Decoration"),
+        workspace:FindFirstChild("PhantomMap") and workspace.PhantomMap:FindFirstChild("RightWalls"),
     }
 end
 
