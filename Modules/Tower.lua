@@ -13,7 +13,7 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local PuntoB = CFrame.new(145, 3, -160)
 local RielSeguroZ = -160
 local AlturaSegura = 3 
-local MULTIPLICADOR_MAX = 0.8 -- 🚀 Sigue rapidísimo
+local MULTIPLICADOR_MAX = 0.7 -- 🚀 Sigue rapidísimo
 
 local TowerConfig = {
     AutoFarm = false,
