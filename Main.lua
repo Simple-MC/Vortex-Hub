@@ -41,6 +41,7 @@ LoadModule("Sectionex")
 LoadModule("AutoCollectB") 
 LoadModule("Tower") 
 LoadModule("Fire&Ice")
+LoadModule("Phantom")
 LoadModule("Settings")
 
 local Keybind = _G.MainTab:Keybind({
