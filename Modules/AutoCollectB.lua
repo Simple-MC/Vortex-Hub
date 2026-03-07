@@ -36,7 +36,7 @@ local Processed = {}
 
 local EventParts = {
     "ArcadeEventTickets", "ArcadeEventConsoles", "MoneyEventParts",
-    "UFOEventParts", "CandyEventParts", "ValentinesCoinParts"
+    "UFOEventParts", "CandyEventParts", "PhantomOrbParts", "ValentinesCoinParts"
 }
 
 -- --- [ FUNCIONES VITALES ] ---
@@ -398,6 +398,7 @@ AutoFarmBTab:Toggle({ Title = "Gold Money 🪙", Callback = function(s) BetaConf
 AutoFarmBTab:Toggle({ Title = "UFO Money 👽", Callback = function(s) BetaConfig.ActiveFolders["UFOEventParts"] = s end })
 AutoFarmBTab:Toggle({ Title = "CANDYS 🍭", Callback = function(s) BetaConfig.ActiveFolders["CandyEventParts"] = s end })
 AutoFarmBTab:Toggle({ Title = "COINS 🍬", Callback = function(s) BetaConfig.ActiveFolders["ValentinesCoinParts"] = s end })
+AutoFarmBTab:Toggle({ Title = "PHANTOMS ORBS👻", Callback = function(s) BetaConfig.ActiveFolders["PhantomOrbParts"] = s end })
 
 AutoFarmBTab:Section({ Title = "--[ OBJETOS PESADOS (Brainrots/Lucky) ]--" })
 AutoFarmBTab:Toggle({ Title = "Lucky Blocks", Callback = function(s) BetaConfig.Targets.LuckyBlocks = s end })
