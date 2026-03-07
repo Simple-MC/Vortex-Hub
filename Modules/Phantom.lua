@@ -11,7 +11,7 @@ local GuiService = game:GetService("GuiService")
 -- --- [ CONFIGURACIÓN PRINCIPAL ] ---
 local RielSeguroZ = -160
 local AlturaSeguraBase = 3 
-local MULTIPLICADOR_MAX = 0.9 -- Velocidad casi al máximo permitido
+local MULTIPLICADOR_MAX = 0.6 -- Velocidad casi al máximo permitido
 
 local PhantomConfig = {
     Enabled = false,
@@ -250,7 +250,7 @@ end
 if _G.AutoFarmBTab then
     _G.AutoFarmBTab:Section({ Title = "--[ EVENTO: PHANTOM (GHOST CANNON) ]--", Icon = "ghost" })
     _G.AutoFarmBTab:Toggle({ 
-        Title = "👻 Auto Phantom (Fast & Safe)", 
+        Title = "👻 Auto Phantom (Fast & Safe)V6", 
         Callback = function(state) 
             _G.TogglePhantomEvent(state) 
         end 
