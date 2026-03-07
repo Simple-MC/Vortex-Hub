@@ -86,3 +86,21 @@ game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Remote
 
 
 
+448.3559265136719, 171.77833557128906, 335.4328918457031-- posición de entrega phantom
+
+
+
+
+
+workspace.PhantomOrbParts
+
+workspace.PhantomMap.Decoration
+
+workspace.PhantomMap_SharedInstances.VIPWalls
+
+workspace.PhantomMap.Walls
+
+
+
+
+
