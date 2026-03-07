@@ -211,32 +211,47 @@ local function GetBetaTarget()
     if not root then return nil end
     local List = {}
 
-    for _, folderName in ipairs(EventParts) do
-        if BetaConfig.ActiveFolders[folderName] then
+    -- 1. BUSCAR EN CARPETAS DE EVENTOS (Tickets, Consolas, UFO, etc.)
+    for folderName, active in pairs(BetaConfig.ActiveFolders) do
+        if active then
             local f = workspace:FindFirstChild(folderName)
-            if f then for _,v in pairs(f:GetChildren()) do table.insert(List, v) end end
+            if f then 
+                -- Usamos GetDescendants por si están dentro de modelos
+                for _, v in pairs(f:GetDescendants()) do 
+                    if v:IsA("BasePart") or v:IsA("Model") then
+                        -- Solo agregar si tiene algo para interactuar (Prompt o es una parte tocable)
+                        if v:FindFirstChildWhichIsA("ProximityPrompt", true) or v:IsA("BasePart") then
+                             table.insert(List, v) 
+                        end
+                    end
+                end 
+            end
         end
     end
 
+    -- 2. BUSCAR LUCKY BLOCKS
     if BetaConfig.Targets.LuckyBlocks then
         local f = workspace:FindFirstChild("ActiveLuckyBlocks")
         if f then 
-            for _,obj in pairs(f:GetDescendants()) do 
+            for _, obj in pairs(f:GetDescendants()) do 
                 if obj:IsA("Model") and not Processed[obj] then
                     if obj:FindFirstChild("Root") or obj:FindFirstChildWhichIsA("ProximityPrompt", true) then
-                        for _,s in pairs(BetaConfig.Sel.Lucky) do if obj.Name:find(s) then table.insert(List,obj) break end end
+                        for _, s in pairs(BetaConfig.Sel.Lucky) do 
+                            if obj.Name:find(s) then table.insert(List, obj) break end 
+                        end
                     end
                 end
             end 
         end
     end
 
+    -- 3. BUSCAR BRAINROTS
     if BetaConfig.Targets.Brainrots then
         local f = workspace:FindFirstChild("ActiveBrainrots")
         if f then 
-            for _,rarityFolder in pairs(f:GetChildren()) do
+            for _, rarityFolder in pairs(f:GetChildren()) do
                 if table.find(BetaConfig.Sel.Brain, rarityFolder.Name) then
-                    for _,obj in pairs(rarityFolder:GetDescendants()) do
+                    for _, obj in pairs(rarityFolder:GetDescendants()) do
                         if obj:IsA("Model") and not Processed[obj] then
                             if obj:FindFirstChild("Root") or obj:FindFirstChildWhichIsA("ProximityPrompt", true) then
                                 table.insert(List, obj)
@@ -248,9 +263,11 @@ local function GetBetaTarget()
         end
     end
 
-    for _,v in pairs(List) do
+    -- 4. COMPARAR DISTANCIAS
+    for _, v in pairs(List) do
         local prompt = v:FindFirstChildWhichIsA("ProximityPrompt", true)
-        local partToCheck = prompt and prompt.Parent or v:FindFirstChild("Root") or v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart", true)
+        local partToCheck = prompt and prompt.Parent or (v:IsA("Model") and (v:FindFirstChild("Root") or v.PrimaryPart)) or (v:IsA("BasePart") and v)
+        
         if partToCheck then 
             local d = (root.Position - partToCheck.Position).Magnitude
             if d < sd then sd = d; c = v end 
