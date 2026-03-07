@@ -37,10 +37,11 @@ LoadModule("Esp3")        -- El ESP avanzado enfocado en UFO Coins
 LoadModule("Esp4")
 LoadModule("Utilities")  -- VIP y Prompts
 LoadModule("AutoCollect")
-LoadModule("Settings")
 LoadModule("Sectionex") 
 LoadModule("AutoCollectB") 
 LoadModule("Tower") 
+LoadModule("Fire&Ice")
+LoadModule("Settings")
 
 local Keybind = _G.MainTab:Keybind({
     Title = "Keybind",
