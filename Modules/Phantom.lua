@@ -1,5 +1,5 @@
 -- =================================================================
--- 👻 MODULE: PHANTOM EVENT (SAFE ELEVATOR FLY & AUTO-DELIVER)
+-- 👻 MODULE: PHANTOM EVENT - (ULTRA FAST & SAFE ELEVATOR)
 -- =================================================================
 
 local RunService = game:GetService("RunService")
@@ -8,10 +8,10 @@ local LocalPlayer = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local GuiService = game:GetService("GuiService")
 
--- --- [ CONFIGURACIÓN ] ---
+-- --- [ CONFIGURACIÓN PRINCIPAL ] ---
 local RielSeguroZ = -160
 local AlturaSeguraBase = 3 
-local MULTIPLICADOR_MAX = 0.6 
+local MULTIPLICADOR_MAX = 0.9 -- Velocidad casi al máximo permitido
 
 local PhantomConfig = {
     Enabled = false,
@@ -21,28 +21,35 @@ local PhantomConfig = {
 local PhantomTween = nil
 local IsPhantomFlying = false
 
--- --- [ LECTOR DEL HUD (BOLAS ACTUALES) ] ---
-local function GetBallsCount()
+-- --- [ LECTOR DINÁMICO DEL HUD ] ---
+local function GetEventValues()
     local gui = LocalPlayer:FindFirstChild("PlayerGui")
-    if gui then
-        local hud = gui:FindFirstChild("HUD")
-        local val = hud 
-            and hud:FindFirstChild("BottomLeft")
-            and hud.BottomLeft:FindFirstChild("GeneralCurrencies")
-            and hud.BottomLeft.GeneralCurrencies:FindFirstChild("Container")
-            and hud.BottomLeft.GeneralCurrencies.Container:FindFirstChild("EventCurrency")
-            and hud.BottomLeft.GeneralCurrencies.Container.EventCurrency:FindFirstChild("Value")
-            
-        if val and val.Text then
-            -- Extrae únicamente los números del TextLabel
-            local num = val.Text:match("%d+")
-            return tonumber(num) or 0
+    local hud = gui and gui:FindFirstChild("HUD")
+    local container = hud and hud:FindFirstChild("BottomLeft") 
+        and hud.BottomLeft:FindFirstChild("GeneralCurrencies") 
+        and hud.BottomLeft.GeneralCurrencies:FindFirstChild("Container") 
+        and hud.BottomLeft.GeneralCurrencies.Container:FindFirstChild("EventCurrency")
+        
+    local valueObj = container and container:FindFirstChild("Value")
+    
+    if valueObj then
+        -- Revisamos si es un TextLabel o un StringValue
+        local texto = valueObj:IsA("TextLabel") and valueObj.Text or tostring(valueObj.Value or "")
+        
+        -- Si el formato es "80/100"
+        local actual, maximo = texto:match("(%d+)/(%d+)")
+        if actual and maximo then
+            return tonumber(actual), tonumber(maximo)
         end
+        
+        -- Si solo es un número "100"
+        local numeroSolo = texto:match("%d+")
+        return tonumber(numeroSolo) or 0, 100 -- Asumimos 100 de máximo por defecto si no lo dice
     end
-    return 0
+    return 0, 100
 end
 
--- --- [ MOTOR DE VUELO BÁSICO ] ---
+-- --- [ MOTOR DE VUELO ULTRA RÁPIDO ] ---
 local function GetRoot() 
     return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") 
 end
@@ -86,7 +93,6 @@ local function RemoveAntiGravity()
         root.Velocity = Vector3.zero
         root.RotVelocity = Vector3.zero
     end
-    pcall(function() RunService:UnbindFromRenderStep("PhantomGhost") end)
 end
 
 local function FlyDirect(TargetVector)
@@ -94,7 +100,7 @@ local function FlyDirect(TargetVector)
     if not root then return false end
     EnsureAntiGravity()
 
-    local currentSpeed = (GuiService:GetScreenResolution().Magnitude * MULTIPLICADOR_MAX) * 0.60
+    local currentSpeed = (GuiService:GetScreenResolution().Magnitude * MULTIPLICADOR_MAX) * 0.95
     local Dist = (root.Position - TargetVector).Magnitude
     local Time = Dist / currentSpeed
     if Time < 0.05 then Time = 0.05 end
@@ -107,7 +113,6 @@ local function FlyDirect(TargetVector)
 
     local elapsed = 0
     while IsPhantomFlying and elapsed < Time do
-        -- Abortar si apagan el script o el mapa desaparece
         if not PhantomConfig.Enabled or not workspace:FindFirstChild("PhantomMap") then 
             IsPhantomFlying = false
             return false 
@@ -118,37 +123,17 @@ local function FlyDirect(TargetVector)
     return true
 end
 
--- --- [ RUTAS DE VUELO SEGURAS ] ---
-
--- 1. Elevador Seguro para la Entrega (El que pediste para no morir)
+-- --- [ RUTAS DE VUELO ] ---
 local function DeliverySafeFly(TargetPos)
     local root = GetRoot()
     if not root then return end
-
-    -- PASO 1: Subir al riel seguro en la posición X actual
-    if math.abs(root.Position.Z - RielSeguroZ) > 5 or math.abs(root.Position.Y - AlturaSeguraBase) > 5 then
-        FlyDirect(Vector3.new(root.Position.X, AlturaSeguraBase, RielSeguroZ))
-    end
-
-    -- PASO 2: Moverse en X por el riel seguro hasta estar alineado con la máquina
+    -- 1. Subir al Riel Seguro (Z = -160, Y = 3)
+    FlyDirect(Vector3.new(root.Position.X, AlturaSeguraBase, RielSeguroZ))
+    -- 2. Alinearse en X con la máquina
     FlyDirect(Vector3.new(TargetPos.X, AlturaSeguraBase, RielSeguroZ))
-
-    -- PASO 3: Subir como elevador en Y (Aún estando en el riel seguro Z = -160)
+    -- 3. Elevador en Y (Sube para evitar cualquier ola)
     FlyDirect(Vector3.new(TargetPos.X, TargetPos.Y, RielSeguroZ))
-
-    -- PASO 4: Cruzar en Z hacia la máquina
-    FlyDirect(Vector3.new(TargetPos.X, TargetPos.Y, TargetPos.Z))
-end
-
--- 2. L-Shape básico para recoger bolas en el suelo
-local function CollectSafeFly(TargetPos)
-    local root = GetRoot()
-    if not root then return end
-    
-    if math.abs(root.Position.Z - RielSeguroZ) > 5 then 
-        FlyDirect(Vector3.new(root.Position.X, AlturaSeguraBase, RielSeguroZ))
-    end
-    FlyDirect(Vector3.new(TargetPos.X, AlturaSeguraBase, RielSeguroZ))
+    -- 4. Cruzar en Z hacia el objetivo final
     FlyDirect(TargetPos)
 end
 
@@ -157,43 +142,27 @@ _G.TogglePhantomEvent = function(state)
     PhantomConfig.Enabled = state
     
     if state then
-        -- Asegurar God Mode si existe
         if not _G.GodModeEnabled and _G.ActivarGodModeTotal then 
             _G.ActivarGodModeTotal(true) 
         end
 
         task.spawn(function()
-            local fueDesactivadoPorMapa = false
+            local mapLost = false
 
             while PhantomConfig.Enabled do
                 pcall(function()
-                    -- Verificamos si el evento está activo
                     if workspace:FindFirstChild("PhantomMap") then
-                        
-                        -- Si antes no estaba, volvemos a activar el Noclip
-                        if fueDesactivadoPorMapa then
-                            fueDesactivadoPorMapa = false
-                            RunService:BindToRenderStep("PhantomGhost", 1, function()
-                                if LocalPlayer.Character and PhantomConfig.Enabled then
-                                    for _,p in pairs(LocalPlayer.Character:GetDescendants()) do 
-                                        if p:IsA("BasePart") then p.CanCollide = false end 
-                                    end
-                                end
-                            end)
-                        end
-
-                        local currentBalls = GetBallsCount()
+                        mapLost = false
+                        local actual, maximo = GetEventValues()
                         local root = GetRoot()
 
                         if root then
-                            if currentBalls >= 100 then
-                                -- ¡INVENTARIO LLENO! Vamos a entregar con el vuelo de elevador seguro
-                                warn("👻 ¡100 Bolas Phantom alcanzadas! Yendo a la máquina...")
+                            -- ¿ESTAMOS LLENOS?
+                            if actual >= maximo then
+                                warn("👻 ¡Límite alcanzado (" .. actual .. ")! Yendo a entregar...")
                                 DeliverySafeFly(PhantomConfig.TargetPos)
                                 
-                                -- Activar el ProximityPrompt del cañón fantasma
-                                local prompt = workspace:FindFirstChild("PhantomMap")
-                                    and workspace.PhantomMap:FindFirstChild("GhostCannon")
+                                local prompt = workspace.PhantomMap:FindFirstChild("GhostCannon")
                                     and workspace.PhantomMap.GhostCannon:FindFirstChild("Part")
                                     and workspace.PhantomMap.GhostCannon.Part:FindFirstChild("Prompts")
                                     and workspace.PhantomMap.GhostCannon.Part.Prompts:FindFirstChild("ProximityPrompt")
@@ -204,52 +173,65 @@ _G.TogglePhantomEvent = function(state)
                                         task.wait(0.1)
                                     end
                                     warn("✨ ¡Bolas Phantom entregadas!")
-                                    task.wait(1) -- Pequeña pausa para que el HUD baje a 0
+                                    task.wait(0.5) -- Esperar a que el HUD se vacíe
                                 end
                             else
-                                -- AÚN HAY ESPACIO: Buscar bolas en el mapa
-                                -- (Usa PhantomOrbParts o busca genéricamente en el PhantomMap)
+                                -- HAY ESPACIO, BUSCAMOS BOLAS
                                 local targetBall = nil
-                                local folder = workspace:FindFirstChild("PhantomOrbParts") or workspace.PhantomMap
+                                local minDist = math.huge
+                                local folder = workspace:FindFirstChild("PhantomOrbParts") or workspace:FindFirstChild("PhantomMap")
                                 
                                 if folder then
                                     for _, obj in pairs(folder:GetDescendants()) do
-                                        -- Filtramos partes que parezcan ser orbes recolectables
                                         if obj:IsA("BasePart") and not obj.Parent:FindFirstChild("Humanoid") then
-                                            -- Agrega aquí condiciones extra si las bolas tienen un nombre específico
+                                            -- Busca partes de orbes. (Si tienen un nombre distinto en Dex, puedes agregarlo aquí)
                                             if obj.Name:lower():find("orb") or obj.Name:lower():find("part") or folder.Name == "PhantomOrbParts" then
-                                                targetBall = obj
-                                                break
+                                                local d = (root.Position - obj.Position).Magnitude
+                                                if d < minDist then 
+                                                    minDist = d
+                                                    targetBall = obj 
+                                                end
                                             end
                                         end
                                     end
                                 end
 
                                 if targetBall then
-                                    CollectSafeFly(targetBall.Position)
+                                    -- Si está lejos, usamos L-Shape seguro; si está cerca, vuelo directo.
+                                    if minDist > 50 then
+                                        FlyDirect(Vector3.new(root.Position.X, AlturaSeguraBase, RielSeguroZ))
+                                        FlyDirect(Vector3.new(targetBall.Position.X, AlturaSeguraBase, RielSeguroZ))
+                                        FlyDirect(targetBall.Position)
+                                    else
+                                        FlyDirect(targetBall.Position)
+                                    end
                                     
+                                    -- Simulamos toque magnético
                                     if firetouchinterest then
                                         firetouchinterest(root, targetBall, 0)
-                                        task.wait(0.05)
                                         firetouchinterest(root, targetBall, 1)
                                     end
                                 end
                             end
                         end
                     else
-                        -- EL EVENTO NO ESTÁ ACTIVO (El mapa desapareció)
-                        if not fueDesactivadoPorMapa then
-                            warn("🚫 PhantomMap no encontrado. Esperando a que comience el evento...")
-                            RemoveAntiGravity() -- Quita el vuelo y restaura al personaje
-                            fueDesactivadoPorMapa = true
+                        -- SI EL EVENTO ACABÓ O AÚN NO EMPIEZA
+                        if not mapLost then
+                            warn("🚫 PhantomMap no encontrado. En espera...")
+                            RemoveAntiGravity()
+                            mapLost = true
                         end
                     end
                 end)
-                task.wait(0.2)
+                task.wait(0.01) -- Ciclo extremadamente rápido para máxima fluidez
             end
+            
+            -- Si apagamos el toggle manualmente
+            RemoveAntiGravity()
+            pcall(function() RunService:UnbindFromRenderStep("PhantomGhost") end)
         end)
 
-        -- INICIO DEL GHOST MODE
+        -- NOCLIP ACTIVO SOLO CUANDO EL MAPA EXISTE
         RunService:BindToRenderStep("PhantomGhost", 1, function()
             if LocalPlayer.Character and PhantomConfig.Enabled and workspace:FindFirstChild("PhantomMap") then
                 for _,p in pairs(LocalPlayer.Character:GetDescendants()) do 
@@ -263,12 +245,12 @@ _G.TogglePhantomEvent = function(state)
 end
 
 -- =================================================================
--- 🎨 INTERFAZ GRÁFICA (Integrado en AutoFarmBTab)
+-- 🎨 INTERFAZ GRÁFICA (Añadiéndolo a tu pestaña)
 -- =================================================================
 if _G.AutoFarmBTab then
     _G.AutoFarmBTab:Section({ Title = "--[ EVENTO: PHANTOM (GHOST CANNON) ]--", Icon = "ghost" })
     _G.AutoFarmBTab:Toggle({ 
-        Title = "👻 Auto Phantom Event (Recoger & Entregar)", 
+        Title = "👻 Auto Phantom (Fast & Safe)", 
         Callback = function(state) 
             _G.TogglePhantomEvent(state) 
         end 
