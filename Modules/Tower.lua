@@ -13,7 +13,7 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local PuntoB = CFrame.new(145, 3, -160)
 local RielSeguroZ = -160
 local AlturaSegura = 3 
-local MULTIPLICADOR_MAX = 0.7 -- 🚀 Sigue rapidísimo
+local MULTIPLICADOR_MAX = 0.6 -- 🚀 Sigue rapidísimo
 
 local TowerConfig = {
     AutoFarm = false,
@@ -29,7 +29,7 @@ local IsWaitingForCooldown = false
 -- --- [ MOTOR DE VUELO ] ---
 local function getVelocidadBypass()
     local res = GuiService:GetScreenResolution()
-    return (res.Magnitude * MULTIPLICADOR_MAX) * 0.75
+    return (res.Magnitude * MULTIPLICADOR_MAX) * 0.60
 end
 
 local function EnsureAntiGravity()
