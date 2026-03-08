@@ -29,7 +29,7 @@ local IsWaitingForCooldown = false
 -- --- [ MOTOR DE VUELO ] ---
 local function getVelocidadBypass()
     local res = GuiService:GetScreenResolution()
-    return (res.Magnitude * MULTIPLICADOR_MAX) * 0.60
+    return (res.Magnitude * MULTIPLICADOR_MAX) * 0.95
 end
 
 local function EnsureAntiGravity()
