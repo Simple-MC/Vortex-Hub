@@ -1,5 +1,5 @@
 -- =================================================================
--- 🏰 TOWER.LUA - V17 (TWEEN SUBTERRÁNEO - ALTURA -0 & VELOCIDAD 750)
+-- 🏰 TOWER.LUA - V20 (MÉTODO INFINITE YIELD - CERO GRAVEDAD)
 -- =================================================================
 
 local AutoFarmBTab = _G.AutoFarmBTab 
@@ -10,9 +10,9 @@ local TweenService = game:GetService("TweenService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local PuntoB = CFrame.new(145, 6, -160)
-local ALTURA_FARM = -0   -- Altura rasante al suelo/agua para evadir olas y agarrar el proxy
-local ALTURA_TORRE = 6   -- Altura exacta para hacer la entrega en la torre
-local VELOCIDAD_TWEEN = 750 -- Velocidad extrema de vuelo
+local ALTURA_FARM = -0   
+local ALTURA_TORRE = 6   
+local VELOCIDAD_TWEEN = 750 
 
 local TowerConfig = {
     AutoFarm = false,
@@ -24,14 +24,44 @@ local CurrentTween = nil
 local IsDoingTower = false
 local IsWaitingForCooldown = false 
 
--- --- [ MOTOR DE MOVIMIENTO TWEEN ] ---
+-- --- [ MOTOR ANTI-CAÍDA (ESTILO INFINITE YIELD) ] ---
+local function EnableIYAntiGravity()
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    -- Remover anteriores si existen
+    if root:FindFirstChild("IY_Float") then root.IY_Float:Destroy() end
+    if root:FindFirstChild("IY_Gyro") then root.IY_Gyro:Destroy() end
+
+    -- Crear Gravedad Cero (Cancela la caída)
+    local float = Instance.new("BodyVelocity")
+    float.Name = "IY_Float"
+    float.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    float.Velocity = Vector3.zero -- Mantenerse quieto
+    float.Parent = root
+
+    -- Crear Estabilizador (Evita dar vueltas)
+    local gyro = Instance.new("BodyGyro")
+    gyro.Name = "IY_Gyro"
+    gyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    gyro.P = 9e4
+    gyro.CFrame = root.CFrame
+    gyro.Parent = root
+end
+
+local function DisableIYAntiGravity()
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if root then
+        if root:FindFirstChild("IY_Float") then root.IY_Float:Destroy() end
+        if root:FindFirstChild("IY_Gyro") then root.IY_Gyro:Destroy() end
+    end
+end
+
 local function CancelTween()
     if CurrentTween then
         CurrentTween:Cancel()
         CurrentTween = nil
     end
-    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if root then root.Velocity = Vector3.zero root.RotVelocity = Vector3.zero end
 end
 
 local function TweenTo(targetPos)
@@ -74,13 +104,9 @@ local function SmartMove(targetCFrame, esTorre)
     
     local targetPos = targetCFrame.Position
 
-    -- 1. Bajar a altura segura (-0) en la posición actual
     if not TweenTo(Vector3.new(root.Position.X, ALTURA_FARM, root.Position.Z)) then return false end
-
-    -- 2. Viajar a la coordenada X, Z del objetivo por debajo/ras del mapa
     if not TweenTo(Vector3.new(targetPos.X, ALTURA_FARM, targetPos.Z)) then return false end
 
-    -- 3. Si es la torre, subir a la altura de entrega. Si es brainrot, nos quedamos abajo.
     if esTorre then
         if not TweenTo(Vector3.new(targetPos.X, ALTURA_TORRE, targetPos.Z)) then return false end
     end
@@ -91,19 +117,15 @@ end
 -- --- [ INTERACCIONES ] ---
 local function InteractTower(prompt)
     if not prompt then return end
-    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     prompt.RequiresLineOfSight = false
     prompt.HoldDuration = 0
-    if root then root.Velocity = Vector3.zero root.RotVelocity = Vector3.zero end
     fireproximityprompt(prompt) 
 end
 
 local function SpamBrainrotPrompt(prompt)
     if not prompt then return end
-    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     prompt.RequiresLineOfSight = false
     prompt.HoldDuration = 0
-    if root then root.Velocity = Vector3.zero root.RotVelocity = Vector3.zero end
     for i = 1, 15 do 
         fireproximityprompt(prompt)
         task.wait(0.01)
@@ -169,7 +191,7 @@ end
 AutoFarmBTab:Section({ Title = "--Tower Event--", Icon = "castle" })
 
 AutoFarmBTab:Toggle({
-    Title = "⚔️ Auto Farm V17 (Ultra Fast)",
+    Title = "⚔️ Auto Farm V20 (IY Anti-Fall)",
     Callback = function(state)
         TowerConfig.AutoFarm = state
         if state then
@@ -178,15 +200,19 @@ AutoFarmBTab:Toggle({
 
             IsDoingTower = false
             IsWaitingForCooldown = false 
+            
+            -- Aplicamos la gravedad cero desde que se activa
+            EnableIYAntiGravity()
 
-            -- Noclip y PlatformStand para deslizarse sin fricción
+            -- Noclip y PlatformStand constante
             RunService:BindToRenderStep("TowerGhost", 1, function()
                 if TowerConfig.AutoFarm and LocalPlayer.Character then
+                    local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                    if hum then hum.PlatformStand = true end
+                    
                     for _,p in pairs(LocalPlayer.Character:GetDescendants()) do 
                         if p:IsA("BasePart") then p.CanCollide = false end 
                     end
-                    local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                    if hum then hum.PlatformStand = true end
                 end
             end)
 
@@ -200,7 +226,6 @@ AutoFarmBTab:Toggle({
                             local towerMain = workspace:FindFirstChild("GameObjects") and workspace.GameObjects:FindFirstChild("PlaceSpecific") and workspace.GameObjects.PlaceSpecific:FindFirstChild("root") and workspace.GameObjects.PlaceSpecific.root:FindFirstChild("Tower") and workspace.GameObjects.PlaceSpecific.root.Tower:FindFirstChild("Main")
                             if not towerMain then return end
 
-                            -- 📐 ECUACIÓN DE POSICIÓN (Detección dinámica)
                             local towerPos = CFrame.new(towerMain.Position.X - 25.68, ALTURA_TORRE, towerMain.Position.Z - 2.5)
                             local prompt = towerMain:FindFirstChild("Prompt") and towerMain.Prompt:FindFirstChild("ProximityPrompt")
 
@@ -236,8 +261,8 @@ AutoFarmBTab:Toggle({
                                     if hasBrainrot then
                                         IsDoingTower = true
                                         SmartMove(towerPos, true)
-                                        InteractTower(prompt)
-                                        warn("📦 Entregado! Esperando 3.5s por cooldown del juego...")
+                                        InteractTower(prompt) 
+                                        warn("📦 Entregado! Esperando 3.5s por cooldown...")
                                         task.wait(3.5) 
                                         IsDoingTower = false
 
@@ -289,7 +314,7 @@ AutoFarmBTab:Toggle({
 
                                                 if p and base then
                                                     local success = SmartMove(base.CFrame, false) 
-                                                    if success then SpamBrainrotPrompt(p) end
+                                                    if success then SpamBrainrotPrompt(p) end 
                                                 end
                                                 IsDoingTower = false
                                             end
@@ -305,12 +330,15 @@ AutoFarmBTab:Toggle({
 
         else
             CancelTween()
+            DisableIYAntiGravity()
             pcall(function() RunService:UnbindFromRenderStep("TowerGhost") end)
+            
             local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             if hum then 
                 hum.PlatformStand = false
-                hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+                hum:ChangeState(Enum.HumanoidStateType.GettingUp) 
             end
+            
             for _,p in pairs(LocalPlayer.Character:GetDescendants()) do 
                 if p:IsA("BasePart") then p.CanCollide = true end 
             end
