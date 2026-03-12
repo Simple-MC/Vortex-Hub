@@ -1,5 +1,5 @@
 -- =================================================================
--- 🏰 TOWER.LUA - V15 (RUTA SEGURA OBLIGATORIA & CAÍDA SIN MIEDO)
+-- 🏰 TOWER.LUA - V17 (TWEEN SUBTERRÁNEO - ALTURA -0 & VELOCIDAD 750)
 -- =================================================================
 
 local AutoFarmBTab = _G.AutoFarmBTab 
@@ -7,13 +7,12 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
-local GuiService = game:GetService("GuiService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
-local PuntoB = CFrame.new(145, 3, -160)
-local RielSeguroZ = -160
-local AlturaSegura = 3 
-local MULTIPLICADOR_MAX = 0.6 -- 🚀 Sigue rapidísimo
+local PuntoB = CFrame.new(145, 6, -160)
+local ALTURA_FARM = -0   -- Altura rasante al suelo/agua para evadir olas y agarrar el proxy
+local ALTURA_TORRE = 6   -- Altura exacta para hacer la entrega en la torre
+local VELOCIDAD_TWEEN = 750 -- Velocidad extrema de vuelo
 
 local TowerConfig = {
     AutoFarm = false,
@@ -21,140 +20,72 @@ local TowerConfig = {
     TargetDeposits = 20, 
 }
 
-local TowerTween = nil
-local IsTowerFlying = false
+local CurrentTween = nil
 local IsDoingTower = false
 local IsWaitingForCooldown = false 
 
--- --- [ MOTOR DE VUELO ] ---
-local function getVelocidadBypass()
-    local res = GuiService:GetScreenResolution()
-    return (res.Magnitude * MULTIPLICADOR_MAX) * 0.95
-end
-
-local function EnsureAntiGravity()
-    if not TowerConfig.AutoFarm then return end
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if root and hum then
-        local motor = root:FindFirstChild("TowerFlyMotor")
-        if not motor then
-            motor = Instance.new("BodyVelocity")
-            motor.Name = "TowerFlyMotor"
-            motor.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-            motor.Velocity = Vector3.zero 
-            motor.Parent = root
-        end
-        hum.PlatformStand = true
+-- --- [ MOTOR DE MOVIMIENTO TWEEN ] ---
+local function CancelTween()
+    if CurrentTween then
+        CurrentTween:Cancel()
+        CurrentTween = nil
     end
-end
-
-local function RemoveAntiGravity()
-    local char = LocalPlayer.Character
-    local root = char and char:FindFirstChild("HumanoidRootPart")
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if TowerTween then TowerTween:Cancel() end
-    IsTowerFlying = false
-    if char then
-        for _, v in pairs(char:GetDescendants()) do
-            if v:IsA("BodyVelocity") and v.Name == "TowerFlyMotor" then v:Destroy() end
-            if v:IsA("BasePart") then v.CanCollide = true end 
-        end
-    end
-    if hum then
-        hum.PlatformStand = false
-        hum:ChangeState(Enum.HumanoidStateType.GettingUp)
-    end
-    if root then root.Velocity = Vector3.zero root.RotVelocity = Vector3.zero end
-    pcall(function() RunService:UnbindFromRenderStep("TowerGhost") end)
-end
-
-local function FlyDirect(TargetCFrame, targetObj)
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not root then return false end
-    EnsureAntiGravity()
+    if root then root.Velocity = Vector3.zero root.RotVelocity = Vector3.zero end
+end
 
-    local currentSpeed = getVelocidadBypass()
-    local Dist = (root.Position - TargetCFrame.Position).Magnitude
-    local Time = Dist / currentSpeed
-    if Time < 0.05 then Time = 0.05 end
+local function TweenTo(targetPos)
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not root or not TowerConfig.AutoFarm or LocalPlayer.Character.Humanoid.Health <= 0 then return false end
 
-    if TowerTween then TowerTween:Cancel() end
-    IsTowerFlying = true
-    TowerTween = TweenService:Create(root, TweenInfo.new(Time, Enum.EasingStyle.Linear), {CFrame = CFrame.new(TargetCFrame.Position)})
-    TowerTween:Play()
+    CancelTween()
+    
+    local dist = (root.Position - targetPos).Magnitude
+    local tiempo = dist / VELOCIDAD_TWEEN
+    if tiempo < 0.05 then tiempo = 0.05 end 
 
-    local elapsed = 0
-    while IsTowerFlying and elapsed < Time do
+    local tweenInfo = TweenInfo.new(tiempo, Enum.EasingStyle.Linear)
+    CurrentTween = TweenService:Create(root, tweenInfo, {CFrame = CFrame.new(targetPos)})
+    
+    local completed = false
+    local connection
+    connection = CurrentTween.Completed:Connect(function()
+        completed = true
+    end)
+    
+    CurrentTween:Play()
+    
+    while not completed do
         if not TowerConfig.AutoFarm or LocalPlayer.Character.Humanoid.Health <= 0 then
-            if TowerTween then TowerTween:Cancel() end
-            IsTowerFlying = false
+            CancelTween()
+            if connection then connection:Disconnect() end
             return false
         end
-        if targetObj and not targetObj.Parent then
-            if TowerTween then TowerTween:Cancel() end
-            IsTowerFlying = false
-            return false 
-        end
-        task.wait() elapsed = elapsed + 0.015
+        task.wait()
     end
-    IsTowerFlying = false
+    
+    if connection then connection:Disconnect() end
     return true
 end
 
-local function EsSeguroMatematico(TargetX, TargetZ)
-    local folder = workspace:FindFirstChild("ActiveTsunamis")
-    if not folder then return true end
+local function SmartMove(targetCFrame, esTorre)
     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not root then return false end
-    local currentSpeed = getVelocidadBypass()
-    local DistanciaTotalViaje = math.abs(root.Position.Z - TargetZ) * 2
-    local NuestroTiempoTotal = (DistanciaTotalViaje / currentSpeed) + 0.5 
+    
+    local targetPos = targetCFrame.Position
 
-    for _, wave in pairs(folder:GetChildren()) do
-        local p = wave:IsA("BasePart") and wave or wave:FindFirstChildWhichIsA("BasePart", true)
-        if p then
-            local VelX = p.AssemblyLinearVelocity.X
-            local SpeedOla = math.abs(VelX) < 10 and 250 or math.abs(VelX)
-            local PosOlaX = p.Position.X
-            local DistanciaOlaAlItem = math.abs(PosOlaX - TargetX)
-            if DistanciaOlaAlItem < 90 then return false end
-            local seAcerca = (VelX > 0 and PosOlaX < TargetX) or (VelX < 0 and PosOlaX > TargetX) or (SpeedOla >= 250 and DistanciaOlaAlItem < 1200)
-            if seAcerca and (DistanciaOlaAlItem / SpeedOla) - NuestroTiempoTotal < 0.5 then return false end
-        end
+    -- 1. Bajar a altura segura (-0) en la posición actual
+    if not TweenTo(Vector3.new(root.Position.X, ALTURA_FARM, root.Position.Z)) then return false end
+
+    -- 2. Viajar a la coordenada X, Z del objetivo por debajo/ras del mapa
+    if not TweenTo(Vector3.new(targetPos.X, ALTURA_FARM, targetPos.Z)) then return false end
+
+    -- 3. Si es la torre, subir a la altura de entrega. Si es brainrot, nos quedamos abajo.
+    if esTorre then
+        if not TweenTo(Vector3.new(targetPos.X, ALTURA_TORRE, targetPos.Z)) then return false end
     end
+
     return true
-end
-
--- --- [ 🛠️ RUTA L-SHAPE ARREGLADA ] ---
-local function LShapeFlyTo(TargetCFrame, esTorre, targetObj)
-    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not root then return false end
-
-    -- 1. OBLIGATORIO: Subir al Riel Seguro primero (Z = -140)
-    local PuntoEntradaRiel = CFrame.new(root.Position.X, AlturaSegura, RielSeguroZ)
-    if math.abs(root.Position.Z - RielSeguroZ) > 10 then 
-        if not FlyDirect(PuntoEntradaRiel, targetObj) then return false end
-    end
-
-    -- 2. OBLIGATORIO: Viajar seguro por la autopista del riel
-    local PuntoDeAtaque = CFrame.new(TargetCFrame.Position.X, AlturaSegura, RielSeguroZ)
-    if not FlyDirect(PuntoDeAtaque, targetObj) then return false end
-
-    -- 3. Si vamos por un ítem, cuidarnos de las olas. Si vamos a la torre, ignorar este paso.
-    if not esTorre then
-        while TowerConfig.AutoFarm and not EsSeguroMatematico(TargetCFrame.Position.X, TargetCFrame.Position.Z) do 
-            if targetObj and not targetObj.Parent then return false end 
-            task.wait() 
-        end
-    end
-
-    -- 4. Caída final hacia el objetivo (Desde la seguridad del riel)
-    if TowerConfig.AutoFarm then 
-        return FlyDirect(TargetCFrame, targetObj) 
-    end
-    return false
 end
 
 -- --- [ INTERACCIONES ] ---
@@ -189,25 +120,6 @@ local function ShouldCompleteTrial()
         end
         local timerText = hud.TrialBar:FindFirstChild("Timer") or hud.TrialBar:FindFirstChild("Time")
         if timerText and (timerText.Text:find("00:00") or timerText.Text:find("0:00")) then return true end
-    end
-    return false
-end
-
-local function GetRequiredRarity()
-    local hud = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("TowerTrialHUD")
-    if hud and hud:FindFirstChild("TrialBar") and hud.TrialBar.Visible then
-        local req = hud.TrialBar:FindFirstChild("Requirement")
-        if req then return req.Text:match("<font.->(.-)</font>") end
-    end
-    return nil
-end
-
-local function HasBrainrotInBack()
-    local char = LocalPlayer.Character
-    if char then
-        for _, v in pairs(char:GetChildren()) do
-            if v:IsA("Model") and (v.Name:find("Brainrot") or v.Name:find("NaturalSpawn")) then return true end
-        end
     end
     return false
 end
@@ -257,7 +169,7 @@ end
 AutoFarmBTab:Section({ Title = "--Tower Event--", Icon = "castle" })
 
 AutoFarmBTab:Toggle({
-    Title = "⚔️ Auto Farm V15",
+    Title = "⚔️ Auto Farm V17 (Ultra Fast)",
     Callback = function(state)
         TowerConfig.AutoFarm = state
         if state then
@@ -266,6 +178,17 @@ AutoFarmBTab:Toggle({
 
             IsDoingTower = false
             IsWaitingForCooldown = false 
+
+            -- Noclip y PlatformStand para deslizarse sin fricción
+            RunService:BindToRenderStep("TowerGhost", 1, function()
+                if TowerConfig.AutoFarm and LocalPlayer.Character then
+                    for _,p in pairs(LocalPlayer.Character:GetDescendants()) do 
+                        if p:IsA("BasePart") then p.CanCollide = false end 
+                    end
+                    local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                    if hum then hum.PlatformStand = true end
+                end
+            end)
 
             task.spawn(function()
                 while TowerConfig.AutoFarm do
@@ -276,17 +199,17 @@ AutoFarmBTab:Toggle({
 
                             local towerMain = workspace:FindFirstChild("GameObjects") and workspace.GameObjects:FindFirstChild("PlaceSpecific") and workspace.GameObjects.PlaceSpecific:FindFirstChild("root") and workspace.GameObjects.PlaceSpecific.root:FindFirstChild("Tower") and workspace.GameObjects.PlaceSpecific.root.Tower:FindFirstChild("Main")
                             if not towerMain then return end
-                            
-                            local towerPos = CFrame.new(towerMain.Position.X - 25.68, 6, towerMain.Position.Z - 2.5)
+
+                            -- 📐 ECUACIÓN DE POSICIÓN (Detección dinámica)
+                            local towerPos = CFrame.new(towerMain.Position.X - 25.68, ALTURA_TORRE, towerMain.Position.Z - 2.5)
                             local prompt = towerMain:FindFirstChild("Prompt") and towerMain.Prompt:FindFirstChild("ProximityPrompt")
 
                             if towerPos and prompt then
                                 if not prompt.Enabled then
                                     if not IsWaitingForCooldown then
                                         IsWaitingForCooldown = true
-                                        warn("⏳ Cooldown activo. Yendo a base...")
-                                        LShapeFlyTo(PuntoB, true) 
-                                        RemoveAntiGravity()
+                                        warn("⏳ Cooldown activo. Esperando en la base...")
+                                        SmartMove(PuntoB, true) 
                                     end
                                     return 
                                 else
@@ -299,7 +222,7 @@ AutoFarmBTab:Toggle({
                                 if not isTrialActive then
                                     if prompt.ActionText == "Start Trial!" then
                                         IsDoingTower = true
-                                        LShapeFlyTo(towerPos, true) 
+                                        SmartMove(towerPos, true) 
                                         InteractTower(prompt) 
                                         task.wait(0.5)
                                         IsDoingTower = false
@@ -312,16 +235,15 @@ AutoFarmBTab:Toggle({
 
                                     if hasBrainrot then
                                         IsDoingTower = true
-                                        LShapeFlyTo(towerPos, true) -- ✨ Ahora sí viajará por el riel
+                                        SmartMove(towerPos, true)
                                         InteractTower(prompt)
-                                        warn("📦 Entregado! Esperando 3.5s...")
-                                        if root then root.Velocity = Vector3.zero end
+                                        warn("📦 Entregado! Esperando 3.5s por cooldown del juego...")
                                         task.wait(3.5) 
                                         IsDoingTower = false
-                                        
+
                                     elseif ShouldCompleteTrial() then
                                         IsDoingTower = true
-                                        LShapeFlyTo(towerPos, true) 
+                                        SmartMove(towerPos, true) 
                                         InteractTower(prompt) 
 
                                         task.wait(0.6) 
@@ -338,14 +260,13 @@ AutoFarmBTab:Toggle({
                                             warn("⚠️ Falló el click en YES")
                                         end
 
-                                        LShapeFlyTo(PuntoB, true) 
-                                        RemoveAntiGravity()
+                                        SmartMove(PuntoB, true) 
                                         IsDoingTower = false
 
                                     else
                                         local reqRarity = nil
                                         if hud.TrialBar:FindFirstChild("Requirement") then reqRarity = hud.TrialBar.Requirement.Text:match("<font.->(.-)</font>") end
-                                        
+
                                         if reqRarity then
                                             local targetObj = nil
                                             local f = workspace:FindFirstChild("ActiveBrainrots")
@@ -367,7 +288,7 @@ AutoFarmBTab:Toggle({
                                                 local base = p and p.Parent or targetObj:FindFirstChild("Root")
 
                                                 if p and base then
-                                                    local success = LShapeFlyTo(base.CFrame, false, targetObj) 
+                                                    local success = SmartMove(base.CFrame, false) 
                                                     if success then SpamBrainrotPrompt(p) end
                                                 end
                                                 IsDoingTower = false
@@ -382,19 +303,17 @@ AutoFarmBTab:Toggle({
                 end
             end)
 
-            RunService:BindToRenderStep("TowerGhost", 1, function()
-                if TowerConfig.AutoFarm and LocalPlayer.Character then
-                    local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    if root and root:FindFirstChild("TowerFlyMotor") then
-                        for _,p in pairs(LocalPlayer.Character:GetDescendants()) do 
-                            if p:IsA("BasePart") then p.CanCollide = false end 
-                        end
-                    end
-                end
-            end)
-
         else
-            RemoveAntiGravity()
+            CancelTween()
+            pcall(function() RunService:UnbindFromRenderStep("TowerGhost") end)
+            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then 
+                hum.PlatformStand = false
+                hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+            end
+            for _,p in pairs(LocalPlayer.Character:GetDescendants()) do 
+                if p:IsA("BasePart") then p.CanCollide = true end 
+            end
         end
     end
 })
