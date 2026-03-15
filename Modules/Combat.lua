@@ -45,7 +45,11 @@ local function ObtenerCosasQueEstorban()
         workspace:FindFirstChild("PhantomMap_SharedInstances") and workspace.PhantomMap_SharedInstances:FindFirstChild("VIPWalls"),
         workspace:FindFirstChild("PhantomMap") and workspace.PhantomMap:FindFirstChild("Decoration"),
         workspace:FindFirstChild("PhantomMap") and workspace.PhantomMap:FindFirstChild("RightWalls"),
-        workspace:FindFirstChild("DoomMap") and workspace.PhantomMap:FindFirstChild("Decorations"),
+        workspace:FindFirstChild("DoomMap") and workspace.DoomMap:FindFirstChild("Decorations"),
+        workspace:FindFirstChild("StPatricksMap") and workspace.StPatricksMap:FindFirstChild("Decorations"),
+        workspace:FindFirstChild("StPatricksMap") and workspace.StPatricksMap:FindFirstChild("RightWalls"),
+        workspace:FindFirstChild("StPatricksMap") and workspace.StPatricksMap:FindFirstChild("Walls"),
+        workspace:FindFirstChild("StPatricksMap_SharedInstances") and workspace.StPatricksMap_SharedInstances:FindFirstChild("VIPWalls"),
     }
 end
 
